@@ -10,7 +10,6 @@ import { HomeAmenities, HomeFaqPreview, HomeGalleryPreview, HomeExperiencesPrevi
 import { StructuredData } from "@/components/seo/StructuredData";
 import { faqSchema, hotelSchema } from "@/lib/seo/schema";
 
-
 export const metadata: Metadata = {
   title: "Tejjora Lake View | Boutique Hotel in Gomti Nagar, Lucknow",
   description: "Stay at Tejjora Lake View in Gomti Nagar, Lucknow — rooms, dining, terrace-led views, direct booking, location guidance and a virtual hotel preview.",
@@ -19,7 +18,7 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <main className="home-page home-page--v2">
+    <main className="home-page home-page--v2" id="main-content">
       <StructuredData data={[hotelSchema, faqSchema]} />
       <HeroExperience />
       <HotelStory />
