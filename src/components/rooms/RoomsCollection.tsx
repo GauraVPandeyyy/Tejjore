@@ -1,0 +1,19 @@
+import Image from "next/image";
+import Link from "next/link";
+import { rooms } from "@/data/rooms";
+import { formatMoney } from "@/data/commerce";
+import { RoomGallery } from "@/components/rooms/RoomGallery";
+import { RoomComparison } from "@/components/rooms/RoomComparison";
+import { SectionLabel } from "@/components/shared/SectionLabel";
+
+function RoomHeroImage(){return <Image src={rooms[1]?.imageSet[0] ?? rooms[0].imageSet[0]} alt="Guest room at Tejjora Lake View" fill priority sizes="100vw"/>;}
+
+export function RoomsCollection() {
+  return <>
+    <section className="rooms-page-hero rooms-page-hero--v3" aria-labelledby="rooms-page-title"><div className="rooms-page-hero__media"><RoomHeroImage /></div><div className="rooms-page-hero__veil"/><div className="site-container rooms-page-hero__content"><div className="rooms-page-hero__topline"><SectionLabel index="01">STAY</SectionLabel><span className="micro">DELUXE · SUPER DELUXE · PREMIUM</span></div><h1 id="rooms-page-title">A room for the quieter<br/><em>part of your Lucknow stay.</em></h1><p>Three room categories, real property photography and a direct path from comparison to availability.</p><div className="restaurant-v3__actions"><Link className="v3-liquid-button v3-liquid-button--cream" href="/book"><span>Check availability</span><i aria-hidden="true">↗</i></Link><Link className="v3-inline-link v3-inline-link--light" href="/virtual-tour">Step inside 360° <span aria-hidden="true">↗</span></Link></div></div></section>
+    <section className="rooms-collection rooms-collection--v2" aria-label="Tejjora room categories">{rooms.map((room,index)=><article id={room.id} key={room.id} className="room-chapter room-chapter--v2"><div className="site-container"><div className="room-chapter__index micro">{String(index+1).padStart(2,"0")} / {room.name}</div><div className="room-chapter__grid"><div className="room-chapter__copy"><h2>{room.name}</h2><p className="room-chapter__lead">{room.shortDescription}</p><p className="room-chapter__description">{room.longDescription}</p><div className="room-chapter__price"><span>Starting from</span><strong>{formatMoney(room.startingPrice??0)}</strong><small>per room / night · configured base rate</small></div><div className="room-chapter__specs"><div><small>BED</small><strong>{room.bedType??"Confirm at booking"}</strong></div><div><small>OCCUPANCY</small><strong>{room.maxGuests?`Up to ${room.maxGuests}`:"Confirm at booking"}</strong></div><div><small>VIEW</small><strong>{room.view??"Room allocation dependent"}</strong></div><div><small>SIZE</small><strong>{room.sizeSqFt?`${room.sizeSqFt} sq ft`:"Final spec pending"}</strong></div></div><div className="room-chapter__amenities">{room.amenities.map(a=><span key={a.id}>{a.label}</span>)}</div><div className="room-chapter__actions"><Link href={`/book?room=${room.id}`} className="room-chapter__primary">Check this room ↗</Link><Link href={`/virtual-tour?scene=${room.id}`} className="room-chapter__secondary">360° preview ↗</Link></div></div><RoomGallery roomName={room.name} images={room.imageSet}/></div></div></article>)}</section>
+    <section className="v2-room-inclusions"><div className="site-container"><SectionLabel index="05">IN EVERY ROOM</SectionLabel><div><h2>The essentials should<br/><em>never feel like extras.</em></h2><p>Air conditioning, complimentary Wi-Fi, a flat-screen TV, work desk and private bathroom are listed across the current room collection.</p></div></div></section>
+    <RoomComparison />
+    <section className="rooms-page-cta"><div className="site-container rooms-page-cta__inner"><span className="micro">NOT SURE WHICH CATEGORY?</span><h2>Tell us the trip.<br/><em>We’ll suggest where to start.</em></h2><div><Link href="/plan-your-stay">Plan my stay ↗</Link><Link href="/book">Check dates ↗</Link></div></div></section>
+  </>;
+}

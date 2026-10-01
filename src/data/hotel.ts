@@ -1,0 +1,22 @@
+export const hotel = {
+  name: "TEJJORA LAKE VIEW",
+  shortName: "Tejjora",
+  address: {
+    line1: "C-1/242, Vikalp Khand",
+    locality: "Gomti Nagar",
+    city: "Lucknow",
+    state: "Uttar Pradesh",
+    postalCode: "226010",
+    country: "India",
+  },
+  phoneDisplay: "+91 96211 34909",
+  phoneE164: "+919621134909",
+  whatsappE164: "919621134909",
+  totalRooms: 29,
+  roomCategoryCount: 3,
+  indicativeStartingRate: 2750,
+  currency: "INR",
+  positioning: "Contemporary lakeside hospitality in Gomti Nagar, Lucknow.",
+  internalCreativeConcept: "THE WATERLINE",
+  internalCreativeThesis: "City on one side. Calm on the other.",
+} as const;

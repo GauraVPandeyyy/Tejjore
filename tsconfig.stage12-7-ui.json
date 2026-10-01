@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "noImplicitAny": false,
+    "noEmit": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": { "@/*": ["./src/*"] },
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/types/ui-shims.d.ts",
+    "src/types/node-shims.d.ts",
+    "src/types/hotel.ts",
+    "src/types/booking.ts",
+    "src/data/assets.ts",
+    "src/data/hotel.ts",
+    "src/data/rooms.ts",
+    "src/data/booking.ts",
+    "src/data/commerce.ts",
+    "src/lib/analytics/track.ts",
+    "src/lib/booking/pricing.ts",
+    "src/lib/booking/providers.ts",
+    "src/lib/booking/request.ts",
+    "src/components/booking/BookingProgress.tsx",
+    "src/components/booking/BookingSummary.tsx",
+    "src/components/booking/BookingExperience.tsx"
+  ]
+}

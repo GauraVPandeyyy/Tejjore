@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "strict": true,
+    "noEmit": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/types/node-shims.d.ts",
+    "src/types/server-only.d.ts",
+    "src/types/hotel.ts",
+    "src/data/assets.ts",
+    "src/data/amenities.ts",
+    "src/data/booking.ts",
+    "src/data/hotel.ts",
+    "src/data/nearby.ts",
+    "src/data/restaurant.ts",
+    "src/data/rooms.ts",
+    "src/data/concierge.ts",
+    "src/lib/concierge/provider.ts",
+    "src/lib/concierge/knowledge.ts",
+    "src/lib/concierge/ruleBasedProvider.ts",
+    "src/lib/concierge/index.ts"
+  ]
+}
