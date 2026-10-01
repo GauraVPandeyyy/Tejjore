@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Manrope } from "next/font/google";
 import { SiteShell } from "@/components/layout/SiteShell";
 import "./globals.css";
+import "./redesign.css";
 
 const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
