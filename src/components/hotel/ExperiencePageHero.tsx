@@ -11,8 +11,8 @@ export function ExperiencePageHero() {
           <h1 id="experience-page-title">The stay changes<br /><em>with the light.</em></h1>
           <p>Move through Tejjora from the room to the table, the terrace and the city beyond — with the lake view becoming a different part of the stay as the day changes.</p>
           <div className="experience-page-hero__links">
-            <Link href="#restaurant">Dining ↓</Link>
-            <Link href="#gallery">Gallery ↓</Link>
+            <Link href="#explore">A day at Tejjora ↓</Link>
+            <Link href="#local-experiences">Ways to spend it ↓</Link>
             <Link href="/virtual-tour">Virtual tour ↗</Link>
           </div>
         </div>
