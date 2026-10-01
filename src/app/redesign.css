@@ -10,185 +10,48 @@
   --redesign-line: rgba(8, 47, 53, 0.16);
 }
 
-body {
-  background: var(--redesign-paper);
-  color: var(--redesign-ink);
-}
+body { background: var(--redesign-paper); color: var(--redesign-ink); }
+.site-header { border-bottom-color: var(--redesign-line); background: color-mix(in srgb, var(--redesign-paper) 88%, transparent); backdrop-filter: blur(16px); }
+.site-header[data-home="true"][data-scrolled="false"] { background: transparent; border-bottom-color: transparent; }
+.site-header__link, .site-header__book, .site-header__menu-button { letter-spacing: 0.04em; }
+.home-page--v2 { overflow: clip; background: var(--redesign-paper); }
+.home-page--v2 > section:not(.hero-experience) { position: relative; scroll-margin-top: 6rem; }
+.home-page--v2 > section:not(.hero-experience)::before { content: ""; display: block; width: min(100% - 2rem, 82rem); height: 1px; margin: 0 auto; background: var(--redesign-line); }
+.home-page--v2 > section:not(.hero-experience):focus { outline: 2px solid var(--redesign-accent); outline-offset: -2px; }
+.hero-experience { min-height: min(880px, 100svh); }
+.hero-content__copy { max-width: 42rem; }
+.hero-title { max-width: 10ch; text-wrap: balance; letter-spacing: -0.045em; }
+.hero-intro { max-width: 32rem; color: rgba(255, 255, 255, 0.86); }
+.hero-booking { border: 1px solid rgba(255, 255, 255, 0.3); background: rgba(7, 39, 44, 0.72); box-shadow: 0 1rem 3rem rgba(4, 26, 29, 0.2); backdrop-filter: blur(18px); }
+.v2-room-preview__media:focus-visible, .v2-room-preview a:focus-visible, .hero-actions a:focus-visible, .booking-search button:focus-visible, .booking-search input:focus-visible, .rooms-page a:focus-visible, .rooms-page button:focus-visible, .room-comparison__table-wrap:focus-visible, .dining-page a:focus-visible, .experience-page a:focus-visible, .location-page a:focus-visible, .location-page button:focus-visible, .mobile-action-bar a:focus-visible, .concierge button:focus-visible, .concierge a:focus-visible, .concierge input:focus-visible { outline: 2px solid var(--redesign-accent); outline-offset: 4px; }
+.rooms-page, .rooms-collection, .room-comparison, .rooms-page-cta, .dining-page section, .experience-page section, .location-experience { scroll-margin-top: 6rem; }
+.rooms-collection:focus, .room-comparison:focus, .location-experience:focus { outline: 2px solid var(--redesign-accent); outline-offset: -2px; }
+.room-chapter { scroll-margin-top: 6rem; }
+.room-chapter + .room-chapter { border-top: 1px solid var(--redesign-line); }
+.room-comparison { background: var(--redesign-paper-deep); }
+.room-comparison__table-wrap { border-color: var(--redesign-line); background: color-mix(in srgb, var(--redesign-paper) 70%, transparent); }
+.room-comparison__cta-row a, .room-comparison__book, .room-chapter__primary, .room-chapter__secondary, .room-gallery button { transition: color 180ms ease, border-color 180ms ease, background-color 180ms ease, transform 180ms ease; }
+.room-comparison__cta-row a:hover, .room-comparison__book:hover, .room-chapter__primary:hover, .room-chapter__secondary:hover, .room-gallery button:hover { color: var(--redesign-accent); }
+.experience-page-hero a, .v3-internal-hero a, .location-experience a, .location-experience button, .mobile-action-bar a, .concierge button, .concierge a { transition: color 180ms ease, border-color 180ms ease, background-color 180ms ease, transform 180ms ease; }
+.experience-page-hero a:hover, .v3-internal-hero a:hover, .location-experience a:hover, .location-experience button:hover, .mobile-action-bar a:hover, .concierge a:hover { color: var(--redesign-accent); }
+.location-experience { padding-bottom: max(7rem, calc(5rem + env(safe-area-inset-bottom))); }
+.mobile-action-bar { padding-bottom: max(0.7rem, env(safe-area-inset-bottom)); }
+.concierge { bottom: max(5.75rem, calc(5rem + env(safe-area-inset-bottom))); }
+.concierge-panel { max-height: min(72svh, 42rem); }
+.concierge-panel__messages { overscroll-behavior: contain; }
 
-.site-header {
-  border-bottom-color: var(--redesign-line);
-  background: color-mix(in srgb, var(--redesign-paper) 88%, transparent);
-  backdrop-filter: blur(16px);
-}
-
-.site-header[data-home="true"][data-scrolled="false"] {
-  background: transparent;
-  border-bottom-color: transparent;
-}
-
-.site-header__link,
-.site-header__book,
-.site-header__menu-button {
-  letter-spacing: 0.04em;
-}
-
-.home-page--v2 {
-  overflow: clip;
-  background: var(--redesign-paper);
-}
-
-.home-page--v2 > section:not(.hero-experience) {
-  position: relative;
-  scroll-margin-top: 6rem;
-}
-
-.home-page--v2 > section:not(.hero-experience)::before {
-  content: "";
-  display: block;
-  width: min(100% - 2rem, 82rem);
-  height: 1px;
-  margin: 0 auto;
-  background: var(--redesign-line);
-}
-
-.home-page--v2 > section:not(.hero-experience):focus {
-  outline: 2px solid var(--redesign-accent);
-  outline-offset: -2px;
-}
-
-.hero-experience {
-  min-height: min(880px, 100svh);
-}
-
-.hero-content__copy {
-  max-width: 42rem;
-}
-
-.hero-title {
-  max-width: 10ch;
-  text-wrap: balance;
-  letter-spacing: -0.045em;
-}
-
-.hero-intro {
-  max-width: 32rem;
-  color: rgba(255, 255, 255, 0.86);
-}
-
-.hero-booking {
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(7, 39, 44, 0.72);
-  box-shadow: 0 1rem 3rem rgba(4, 26, 29, 0.2);
-  backdrop-filter: blur(18px);
-}
-
-.v2-room-preview__media:focus-visible,
-.v2-room-preview a:focus-visible,
-.hero-actions a:focus-visible,
-.booking-search button:focus-visible,
-.booking-search input:focus-visible,
-.rooms-page a:focus-visible,
-.rooms-page button:focus-visible,
-.room-comparison__table-wrap:focus-visible {
-  outline: 2px solid var(--redesign-accent);
-  outline-offset: 4px;
-}
-
-.rooms-page,
-.rooms-collection,
-.room-comparison,
-.rooms-page-cta {
-  scroll-margin-top: 6rem;
-}
-
-.rooms-collection:focus,
-.room-comparison:focus {
-  outline: 2px solid var(--redesign-accent);
-  outline-offset: -2px;
-}
-
-.room-chapter {
-  scroll-margin-top: 6rem;
-}
-
-.room-chapter + .room-chapter {
-  border-top: 1px solid var(--redesign-line);
-}
-
-.room-comparison {
-  background: var(--redesign-paper-deep);
-}
-
-.room-comparison__table-wrap {
-  border-color: var(--redesign-line);
-  background: color-mix(in srgb, var(--redesign-paper) 70%, transparent);
-}
-
-.room-comparison__cta-row a,
-.room-comparison__book,
-.room-chapter__primary,
-.room-chapter__secondary,
-.room-gallery button {
-  transition: color 180ms ease, border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
-}
-
-.room-comparison__cta-row a:hover,
-.room-comparison__book:hover,
-.room-chapter__primary:hover,
-.room-chapter__secondary:hover,
-.room-gallery button:hover {
-  color: var(--redesign-accent);
-}
-
-.home-page--v2 .site-container {
-  width: min(100% - 2.5rem, 86rem);
-}
-
-@media (min-width: 1000px) {
-  .home-page--v2 > section:not(.hero-experience) {
-    padding-block: clamp(4.5rem, 7vw, 8rem);
-  }
-}
-
+@media (min-width: 1000px) { .home-page--v2 > section:not(.hero-experience) { padding-block: clamp(4.5rem, 7vw, 8rem); } }
 @media (max-width: 700px) {
-  .home-page--v2 .site-container {
-    width: min(100% - 2rem, 40rem);
-  }
-
-  .home-page--v2 > section:not(.hero-experience) {
-    padding-block: 3.75rem;
-  }
-
-  .hero-experience {
-    min-height: 760px;
-  }
-
-  .hero-title {
-    max-width: 8ch;
-    font-size: clamp(3.2rem, 16vw, 5.4rem);
-  }
-
-  .hero-booking {
-    margin-inline: 0;
-  }
-
-  .rooms-page,
-  .rooms-collection,
-  .room-comparison,
-  .rooms-page-cta,
-  .room-chapter {
-    scroll-margin-top: 5rem;
-  }
+  .home-page--v2 .site-container { width: min(100% - 2rem, 40rem); }
+  .home-page--v2 > section:not(.hero-experience) { padding-block: 3.75rem; }
+  .hero-experience { min-height: 760px; }
+  .hero-title { max-width: 8ch; font-size: clamp(3.2rem, 16vw, 5.4rem); }
+  .hero-booking { margin-inline: 0; }
+  .rooms-page, .rooms-collection, .room-comparison, .rooms-page-cta, .room-chapter, .dining-page section, .experience-page section, .location-experience { scroll-margin-top: 5rem; }
+  .mobile-action-bar { min-height: 4rem; }
+  .concierge { bottom: max(5.25rem, calc(4.75rem + env(safe-area-inset-bottom))); }
+  .concierge-panel { width: min(calc(100vw - 1rem), 26rem); max-height: min(78svh, 40rem); }
 }
-
 @media (prefers-reduced-motion: reduce) {
-  .site-header,
-  .room-comparison__cta-row a,
-  .room-comparison__book,
-  .room-chapter__primary,
-  .room-chapter__secondary,
-  .room-gallery button {
-    backdrop-filter: none;
-    transition: none;
-  }
+  .site-header, .room-comparison__cta-row a, .room-comparison__book, .room-chapter__primary, .room-chapter__secondary, .room-gallery button, .experience-page-hero a, .v3-internal-hero a, .location-experience a, .location-experience button, .mobile-action-bar a, .concierge button, .concierge a { backdrop-filter: none; transition: none; }
 }
