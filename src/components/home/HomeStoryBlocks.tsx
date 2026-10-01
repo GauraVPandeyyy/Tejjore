@@ -48,7 +48,7 @@ export function HomeAmenities() {
 
 export function HomeRoomPreview() {
   return (
-    <section className="v2-room-preview" aria-labelledby="room-preview-title">
+    <section id="rooms" className="v2-room-preview" aria-labelledby="room-preview-title" tabIndex={-1}>
       <div className="site-container">
         <div className="v2-section-head v2-section-head--split">
           <div><SectionLabel index="03">STAY</SectionLabel><h2 id="room-preview-title">Spaces for slow mornings,<br /><em>restful nights and the hours between.</em></h2></div>
