@@ -15,7 +15,7 @@ const comparisonRows = [
 
 export function RoomComparison({ compact = false }: { compact?: boolean }) {
   return (
-    <section className={`room-comparison ${compact ? "room-comparison--compact" : ""}`.trim()} aria-labelledby="room-comparison-title">
+    <section id="compare" className={`room-comparison ${compact ? "room-comparison--compact" : ""}`.trim()} aria-labelledby="room-comparison-title" tabIndex={-1}>
       <div className="site-container">
         <div className="room-comparison__topline">
           <SectionLabel index="03B">COMPARE</SectionLabel>
