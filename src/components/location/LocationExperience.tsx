@@ -43,7 +43,7 @@ export function LocationExperience({ index = "09" }: { index?: string }) {
   }
 
   return (
-    <section id="location" className="location-experience" aria-labelledby="location-title">
+    <section id="location" className="location-experience" aria-labelledby="location-title" tabIndex={-1}>
       <div className="site-container">
         <div className="location-experience__topline">
           <SectionLabel index={index}>LOCATION</SectionLabel>
