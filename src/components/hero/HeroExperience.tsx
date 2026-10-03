@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CSSProperties, useEffect, useRef, useState } from "react";
-import { BookingSearch } from "@/components/booking/BookingSearch";
 import { assets } from "@/data/assets";
 import { hotel } from "@/data/hotel";
 
@@ -127,7 +126,6 @@ export function HeroExperience() {
             <span>THE WATERLINE / 00</span>
           </div>
 
-          <BookingSearch className="hero-booking" />
 
           <div className="hero-footnote">
             <span>{hotel.address.locality}, {hotel.address.city}</span>

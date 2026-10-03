@@ -90,6 +90,7 @@ export type BookingRequestResponse = {
   paymentAvailable: boolean;
   paymentMode: "razorpay" | "test" | "unavailable";
   accessToken: string;
+  bookingReceivedEmailStatus?: "sent" | "failed" | "unavailable";
   confirmationEmailStatus?: "not_sent" | "sent" | "failed" | "unavailable" | "not_applicable";
 };
 

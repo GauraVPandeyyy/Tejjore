@@ -13,7 +13,6 @@
   "include": [
     "src/types/server-only.d.ts",
     "src/types/node-shims.d.ts",
-    "src/types/next-server-shims.d.ts",
     "src/types/hotel.ts",
     "src/types/booking.ts",
     "src/types/admin.ts",

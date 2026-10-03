@@ -101,7 +101,7 @@ export function TerraceExperience() {
         <div
           className={`terrace-scroll__sticky terrace-scroll__sticky--${active.tone}`}
         >
-          <div className="terrace-scroll__media" aria-hidden="true">
+          <div className="terrace-scroll__media absolute inset-0" aria-hidden="true">
             {terraceViewSequence.map((state, index) => {
               const distance = Math.abs(position - index);
 
@@ -112,7 +112,7 @@ export function TerraceExperience() {
               return (
                 <div
                   key={state.id}
-                  className="terrace-scroll__image-layer"
+                  className="terrace-scroll__image-layer absolute inset-0"
                   style={{
                     opacity,
                     transform: `scale(${scale})`,
@@ -122,7 +122,7 @@ export function TerraceExperience() {
                     src={desktopTerraceImages[index]}
                     alt=""
                     fill
-                    sizes="100vw"
+                    sizes="(min-width: 901px) 100vw, 1px"
                     priority={index === 0}
                     className="terrace-scroll__photo"
                   />
@@ -195,7 +195,7 @@ export function TerraceExperience() {
         <div
           className={`terrace-scroll__mobile-sticky terrace-scroll__sticky--${active.tone}`}
         >
-          <div className="terrace-scroll__mobile-media" aria-hidden="true">
+          <div className="terrace-scroll__mobile-media absolute inset-0" aria-hidden="true">
             {terraceViewSequence.map((state, index) => {
               const distance = Math.abs(position - index);
 
@@ -206,7 +206,7 @@ export function TerraceExperience() {
               return (
                 <div
                   key={state.id}
-                  className="terrace-scroll__mobile-image-layer"
+                  className="terrace-scroll__mobile-image-layer absolute inset-0"
                   style={{
                     opacity,
                     transform: `scale(${scale})`,
@@ -216,7 +216,7 @@ export function TerraceExperience() {
                     src={mobileTerraceImages[index]}
                     alt=""
                     fill
-                    sizes="100vw"
+                    sizes="(max-width: 900px) 100vw, 1px"
                     priority={index === 0}
                     className="terrace-scroll__photo"
                   />

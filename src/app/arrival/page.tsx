@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { ArrivalDashboard } from "@/components/arrival/ArrivalDashboard";
 
@@ -11,5 +12,9 @@ export const metadata: Metadata = {
 };
 
 export default function ArrivalPage() {
-  return <ArrivalDashboard />;
+  return (
+    <Suspense fallback={null}>
+      <ArrivalDashboard />
+    </Suspense>
+  );
 }

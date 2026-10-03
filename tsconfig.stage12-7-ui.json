@@ -13,7 +13,6 @@
     "skipLibCheck": true
   },
   "include": [
-    "src/types/ui-shims.d.ts",
     "src/types/node-shims.d.ts",
     "src/types/hotel.ts",
     "src/types/booking.ts",

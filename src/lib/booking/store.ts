@@ -37,7 +37,7 @@ function errorCode(error: unknown) {
 
 async function readStore(): Promise<BookingStoreData> {
   try {
-    const raw = await readFile(storePath(), "utf8");
+    const raw = await readFile(/*turbopackIgnore: true*/ storePath(), "utf8");
     const parsed = JSON.parse(raw) as Partial<BookingStoreData>;
     return {
       reservations: Array.isArray(parsed.reservations) ? parsed.reservations : [],
