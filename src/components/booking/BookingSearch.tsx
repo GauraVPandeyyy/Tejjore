@@ -399,7 +399,7 @@ export function BookingSearch({ className = "" }: Props) {
       <div className="fixed inset-x-0 bottom-[max(10px,env(safe-area-inset-bottom))] z-[145] px-3 lg:hidden">
         <div className="mx-auto flex max-w-[430px] items-end justify-center gap-2">
           <div className="flex gap-2">
-            <motion.button
+            {/* <motion.button
               type="button"
               onClick={() => setMobileOpen(true)}
               aria-label="Plan your stay"
@@ -407,9 +407,9 @@ export function BookingSearch({ className = "" }: Props) {
               whileTap={{ scale: 0.94 }}
             >
               <SparkIcon className="size-5" />
-            </motion.button>
+            </motion.button> */}
 
-            <motion.button
+            {/* <motion.button
               type="button"
               onClick={() => setMobileOpen(true)}
               aria-label="Choose dates and guests"
@@ -417,6 +417,17 @@ export function BookingSearch({ className = "" }: Props) {
               whileTap={{ scale: 0.94 }}
             >
               <CalendarIcon className="size-5" />
+            </motion.button> */}
+
+            <motion.button
+              type="button"
+              onClick={handleMobileMenu}
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
+              className="grid size-[50px] shrink-0 place-items-center rounded-full bg-[#0D344A] text-white shadow-[0_12px_38px_rgba(3,26,36,.3)]"
+              whileTap={{ scale: 0.94 }}
+            >
+              <MenuIcon open={menuOpen} />
             </motion.button>
           </div>
 
@@ -443,7 +454,7 @@ export function BookingSearch({ className = "" }: Props) {
             </motion.button>
           </div>
 
-          <motion.button
+          {/* <motion.button
             type="button"
             onClick={handleMobileMenu}
             aria-label={menuOpen ? "Close menu" : "Open menu"}
@@ -452,7 +463,7 @@ export function BookingSearch({ className = "" }: Props) {
             whileTap={{ scale: 0.94 }}
           >
             <MenuIcon open={menuOpen} />
-          </motion.button>
+          </motion.button> */}
         </div>
       </div>
 

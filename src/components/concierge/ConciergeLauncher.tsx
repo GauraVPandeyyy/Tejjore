@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
@@ -151,9 +152,8 @@ export function ConciergeLauncher() {
         title="Tejjora AI"
         onClick={toggleConcierge}
       >
-        <span className="concierge__launcher-mark" aria-hidden="true">
-          <span>T</span>
-          <i />
+        <span className="concierge__launcher-mark">
+          <Image src="/brand/TejAI.png" alt="" fill sizes="48px" />
         </span>
         <span className="sr-only">Tejjora AI</span>
         <span className="concierge__launcher-state" aria-hidden="true">{open ? "×" : ""}</span>
@@ -167,18 +167,31 @@ export function ConciergeLauncher() {
           aria-label="Tejjora Concierge"
         >
           <header className="concierge-panel__header">
-            <div>
-              <span className="micro">TEJJORA / CONCIERGE</span>
-              <h2>How can we make your stay simpler?</h2>
+            <div className="concierge-panel__identity">
+              <Image src="/brand/TejAI.png" alt="" width={48} height={48} />
+              <div>
+                <span className="micro">TEJJORA / CONCIERGE</span>
+                <h2>TejAI</h2>
+                <p>Here to make your stay simpler</p>
+              </div>
             </div>
-            <button type="button" onClick={() => setOpen(false)} aria-label="Close concierge">Close</button>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Close TejAI chat"
+              className="concierge-panel__close"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m6 6 12 12M18 6 6 18" />
+              </svg>
+            </button>
           </header>
 
           <div className="concierge-panel__messages" ref={messagesRef} aria-live="polite">
             {messages.map((message) => (
               <article key={message.id} className="concierge-message" data-role={message.role}>
                 <span className="concierge-message__role">
-                  {message.role === "assistant" ? "Concierge" : "You"}
+                  {message.role === "assistant" ? "TejAI" : "You"}
                 </span>
                 <p>{message.content}</p>
                 {message.role === "assistant" && message.dataSource ? (

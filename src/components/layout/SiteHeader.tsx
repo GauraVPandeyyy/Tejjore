@@ -231,13 +231,18 @@ export function SiteHeader() {
   if (pathname.startsWith("/admin")) return null;
 
   const color = menuOpen ? LIGHT : tone === "light" ? LIGHT : DARK;
+  const backgroundColor = menuOpen
+    ? "rgba(13, 52, 74, 0.96)"
+    : tone === "light"
+      ? "rgba(13, 52, 74, 0.76)"
+      : "rgba(248, 245, 237, 0.82)";
 
   return (
     <>
       <motion.header
         data-site-chrome
-        className="pointer-events-none fixed inset-x-0 top-0 z-[140]"
-        animate={{ color }}
+        className="pointer-events-none fixed inset-x-0 top-0 z-[140] border-b border-current/10 backdrop-blur-xl"
+        animate={{ color, backgroundColor }}
         transition={{ duration: reduceMotion ? 0 : 0.3, ease: EASE }}
       >
         <div className="relative mx-auto h-[72px] w-full max-w-[1920px] px-4 sm:px-7 lg:h-[92px] lg:px-12">
@@ -269,12 +274,17 @@ export function SiteHeader() {
           >
             <PhoneIcon />
           </a>
-          <span
-            aria-label="Language: English"
-            className="pointer-events-none absolute right-4 top-1/2 flex min-h-10 -translate-y-1/2 items-center text-[12px] font-medium tracking-[0.12em] lg:hidden"
+          <motion.button
+            type="button"
+            onClick={menuOpen ? closeMenu : openMenu}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            aria-controls="site-menu"
+            className="pointer-events-auto absolute right-4 top-1/2 grid size-10 -translate-y-1/2 place-items-center lg:hidden"
+            whileTap={{ scale: 0.94 }}
           >
-            EN
-          </span>
+            <MenuIcon open={menuOpen} className="size-8" />
+          </motion.button>
 
           {/* Centered brand */}
           <motion.div
@@ -329,6 +339,7 @@ export function SiteHeader() {
           <motion.div
             data-site-chrome
             className="pointer-events-auto fixed inset-0 z-[130] overflow-y-auto bg-[#0D344A] text-[#F5F3EE]"
+            id="site-menu"
             initial={{ clipPath: "circle(0% at 94% 8%)" }}
             animate={{ clipPath: "circle(150% at 94% 8%)" }}
             exit={{ clipPath: "circle(0% at 94% 8%)" }}

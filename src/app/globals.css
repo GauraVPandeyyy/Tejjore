@@ -13208,6 +13208,18 @@ body::before {
   flex-wrap: wrap;
   gap: 1rem;
 }
+.site-footer--v2 .site-footer__credit {
+  margin-top: 0.75rem;
+  color: rgba(242, 239, 232, 0.5);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+.site-footer--v2 .site-footer__credit a {
+  color: rgba(242, 239, 232, 0.76);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
 
 @media (max-width: 980px) {
   .v2-section-head--split,
@@ -15744,5 +15756,183 @@ h3 em {
   .site-intro__line,
   .site-intro__brand {
     animation: none;
+  }
+}
+
+/* TejAI concierge */
+.concierge__launcher--compact .concierge__launcher-mark {
+  overflow: hidden;
+  border: 0;
+  border-radius: 50%;
+  background: var(--lake-deep);
+  transform: none;
+}
+
+.concierge__launcher--compact .concierge__launcher-mark img {
+  object-fit: cover;
+}
+
+.concierge[data-open="true"] {
+  z-index: 160;
+}
+
+.concierge-panel {
+  grid-template-rows: auto minmax(8rem, 1fr) auto auto auto;
+  border-color: rgba(255, 246, 198, 0.2);
+  border-radius: 1.4rem;
+  background:
+    radial-gradient(ellipse at top right, rgba(25, 104, 106, 0.24), transparent 42%),
+    #062d34;
+}
+
+.concierge-panel__header {
+  align-items: center;
+  padding: 1.15rem 1.2rem;
+  background: rgba(0, 20, 25, 0.28);
+}
+
+.concierge-panel__identity {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.concierge-panel__identity > img {
+  width: 3rem;
+  height: 3rem;
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 246, 198, 0.36);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.concierge-panel__identity h2 {
+  margin: 0.25rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  line-height: 1;
+}
+
+.concierge-panel__identity p {
+  margin: 0.3rem 0 0;
+  color: rgba(242, 239, 232, 0.65);
+  font-size: 0.72rem;
+}
+
+.concierge-panel__close {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(255, 246, 198, 0.24);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ivory);
+  cursor: pointer;
+  transition: background var(--duration-ui) var(--ease-waterline);
+}
+
+.concierge-panel__close:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.concierge-panel__close svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.7;
+}
+
+.concierge-panel__messages {
+  gap: 1rem;
+  padding: 1.15rem;
+}
+
+.concierge-message {
+  max-width: 86%;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 1.1rem 1.1rem 1.1rem 0.3rem;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.concierge-message[data-role="user"] {
+  border-color: transparent;
+  border-radius: 1.1rem 1.1rem 0.3rem 1.1rem;
+  background: #fff6c6;
+  color: #17383a;
+}
+
+.concierge-message__role {
+  font-size: 0.62rem;
+  font-weight: 600;
+}
+
+.concierge-message p {
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.concierge-panel__prompts button {
+  border-radius: 0.65rem;
+  background: rgba(255, 255, 255, 0.035);
+  font-size: 0.72rem;
+}
+
+.concierge-panel__composer {
+  min-height: 3.5rem;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.concierge-panel__composer input {
+  font-size: 0.9rem;
+}
+
+.concierge-panel__composer button {
+  min-width: 4.8rem;
+  background: var(--brand-cream);
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .concierge[data-open="true"] {
+    inset: 0;
+    display: flex;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    background: #062d34;
+  }
+
+  .concierge[data-open="true"] .concierge-panel {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    flex: 1 1 auto;
+    border: 0;
+    border-radius: 0;
+    padding-bottom: 0.5rem;
+  }
+
+  .concierge[data-open="true"] .concierge-panel__header {
+    position: relative;
+    z-index: 1;
+    padding: 0.85rem 1rem;
+  }
+
+  .concierge[data-open="true"] .concierge-panel__close {
+    width: 2.9rem;
+    height: 2.9rem;
+  }
+
+  .concierge-panel__messages {
+    padding: 1rem;
+  }
+
+  .concierge-panel__composer {
+    margin-bottom: 0.25rem;
   }
 }
