@@ -132,6 +132,7 @@ const menuColumns = [
   {
     title: "Stay",
     links: [
+      { label: "Book a stay", href: "/book" },
       { label: "Rooms", href: "/rooms" },
       { label: "Plan your stay", href: "/plan-your-stay" },
       { label: "Manage booking", href: "/manage-booking" },
@@ -156,6 +157,12 @@ const menuColumns = [
       { label: "Photography", href: "/gallery" },
     ],
   },
+] as const;
+
+// Mobile menu's large links: the primary sections plus a direct booking entry point.
+const mobileMenuLinks = [
+  ...primaryNavigation,
+  { label: "Book a Stay", href: "/book" },
 ] as const;
 
 export function SiteHeader() {
@@ -313,11 +320,20 @@ export function SiteHeader() {
           {/* Desktop controls */}
           <div className="pointer-events-auto absolute right-12 top-1/2 hidden -translate-y-1/2 items-stretch lg:flex">
             <motion.div
-              className="grid size-[64px] place-items-center bg-[#0D344A] text-white xl:size-[70px]"
+              className={`grid size-[64px] place-items-center bg-[#0D344A] text-white xl:size-[70px] ${menuOpen ? "pointer-events-none" : ""}`}
               animate={{ opacity: menuOpen ? 0 : 1 }}
               whileHover={{ backgroundColor: "#12465F" }}
             >
-              <WaterMarkIcon className="size-8 xl:size-9" />
+              {/* Header booking CTA: same tile, now a real link to the booking flow. */}
+              <Link
+                href="/book"
+                aria-label="Book a stay"
+                title="Book a stay"
+                tabIndex={menuOpen ? -1 : undefined}
+                className="grid size-full place-items-center"
+              >
+                <WaterMarkIcon className="size-8 xl:size-9" />
+              </Link>
             </motion.div>
             <motion.button
               type="button"
@@ -429,7 +445,7 @@ export function SiteHeader() {
             {/* Mobile menu */}
             <div className="relative flex min-h-dvh flex-col px-5 pb-[118px] pt-[106px] lg:hidden">
               <div className="grid gap-0 border-t border-white/10">
-                {primaryNavigation.map((item, index) => (
+                {mobileMenuLinks.map((item, index) => (
                   <motion.div
                     key={item.href}
                     initial={{ opacity: 0, x: -24 }}

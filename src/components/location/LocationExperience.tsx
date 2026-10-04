@@ -84,7 +84,7 @@ export function LocationExperience({ index = "09" }: { index?: string }) {
         <div className="location-v2__arrival">
           <article><span className="micro">FLYING IN</span><h3>Start with the live route from the airport.</h3><p>Open Google Maps from Chaudhary Charan Singh International Airport for current routing rather than relying on a stale fixed travel-time promise.</p><a href={mapsSearchUrl("Chaudhary Charan Singh International Airport Lucknow")} target="_blank" rel="noreferrer">Open airport route ↗</a></article>
           <article><span className="micro">ARRIVING BY TRAIN</span><h3>Use your exact station as the origin.</h3><p>Lucknow has multiple railway arrival points. Live directions are more useful than publishing one generic station time.</p><a href={mapsSearchUrl("Lucknow Junction Railway Station")} target="_blank" rel="noreferrer">Open railway route ↗</a></article>
-          <article><span className="micro">DRIVING</span><h3>Vikalp Khand, with parking at the hotel.</h3><p>Free private parking is listed among Tejjora's hotel amenities. Use the full property address for turn-by-turn navigation.</p><button type="button" onClick={routeFromMyLocation}>Route from my location ↗</button></article>
+          <article><span className="micro">DRIVING</span><h3>Vikalp Khand, with parking at the hotel.</h3><p>Free private parking is listed among Tejjora&apos;s hotel amenities. Use the full property address for turn-by-turn navigation.</p><button type="button" onClick={routeFromMyLocation}>Route from my location ↗</button></article>
         </div>
 
         <div className="location-v2__note">

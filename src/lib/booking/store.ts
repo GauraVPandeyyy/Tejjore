@@ -1,5 +1,5 @@
 import "server-only";
-import { mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, rm, stat, utimes, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ReservationRecord } from "@/types/booking";
 import type { RoomId } from "@/types/hotel";
@@ -74,7 +74,15 @@ async function acquireStoreLock() {
   while (Date.now() - started < maxWaitMs) {
     try {
       await mkdir(lockPath, { mode: 0o700 });
-      return async () => { await rm(lockPath, { recursive: true, force: true }); };
+      // Keep the lock fresh while work runs so a slow operation is never mistaken for stale.
+      const heartbeat = setInterval(() => {
+        const now = new Date();
+        utimes(lockPath, now, now).catch(() => undefined);
+      }, staleMs / 3);
+      return async () => {
+        clearInterval(heartbeat);
+        await rm(lockPath, { recursive: true, force: true });
+      };
     } catch (error) {
       if (errorCode(error) !== "EEXIST") throw error;
       try {

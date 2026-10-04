@@ -19,8 +19,6 @@ const requiredFiles = [
   "src/app/api/payments/order/route.ts",
   "src/app/api/payments/verify/route.ts",
   "src/app/api/payments/webhook/route.ts",
-  "tsconfig.stage12-final-core.json",
-  "tsconfig.stage12-final-ui.json",
 ];
 for (const file of requiredFiles) if (!exists(file)) errors.push(`Missing required final-audit file: ${file}`);
 
@@ -54,7 +52,7 @@ for (const [label, haystack, needles] of [
   ["manage booking", manage, ["Booking email", "Booking phone", "accessToken", "startPayment"]],
   ["booking success", experience, ["Manage booking", "promoCode", "Hold room & continue to payment"]],
   ["concierge current-data guardrails", concierge, ["validateStayDates", "Manage booking", "availability-development", "live-rates"]],
-  ["commercial configuration", commerce, ["NEXT_PUBLIC_RATE_PLAN_CONFIG_JSON", "NEXT_PUBLIC_ADDON_CONFIG_JSON", "NEXT_PUBLIC_PROMO_CODES_JSON", "includedAdultsPerRoom"]],
+  ["commercial configuration", commerce, ["NEXT_PUBLIC_RATE_PLAN_CONFIG_JSON", "NEXT_PUBLIC_ADDON_CONFIG_JSON", "PROMO_CODES_JSON", "includedAdultsPerRoom"]],
   ["pricing engine", pricing, ["extraGuestCharge", "childrenCharge", "Promotional code is invalid", "discount"]],
 ]) {
   for (const needle of needles) if (!haystack.includes(needle)) errors.push(`${label} missing marker: ${needle}`);

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createReservation } from "@/lib/booking/reservations";
-import { parseBookingPayload } from "@/lib/booking/validation";
+import { BookingInputError, createReservation } from "@/lib/booking/reservations";
+import { validateBookingPayload } from "@/lib/booking/validation";
 import { sendBookingReceivedEmail } from "@/lib/email/provider";
 import { paymentMode } from "@/lib/payments/razorpay";
 import { rateLimit } from "@/lib/security/rateLimit";
@@ -19,13 +19,11 @@ export async function POST(request: Request) {
   }
 
   const raw = await request.json().catch(() => null);
-  const body = parseBookingPayload(raw);
-  if (!body) {
-    return NextResponse.json(
-      { error: "The booking details are incomplete or contain an invalid/unconfigured option." },
-      { status: 400 },
-    );
+  const validation = validateBookingPayload(raw);
+  if (!validation.ok) {
+    return NextResponse.json({ error: validation.error }, { status: 400 });
   }
+  const body = validation.payload;
 
   try {
     const { reservation, accessToken } = await createReservation(body);
@@ -51,9 +49,11 @@ export async function POST(request: Request) {
       bookingReceivedEmailStatus: bookingEmail.status,
     }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
+    if (error instanceof BookingInputError) return NextResponse.json({ error: error.message }, { status: 409 });
+    console.error("Reservation could not be created", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Reservation could not be created." },
-      { status: 409 },
+      { error: "Reservation could not be created right now. Please try again shortly." },
+      { status: 503 },
     );
   }
 }

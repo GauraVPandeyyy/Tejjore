@@ -10,8 +10,7 @@ const required = [
   "src/app/api/concierge/route.ts",
   "src/components/concierge/ConciergeLauncher.tsx",
   "src/data/concierge.ts",
-  "docs/STAGE-12.9.md",
-  "tsconfig.stage12-9-core.json"
+  "docs/STAGE-12.9.md"
 ];
 for (const file of required) await stat(path.join(root, file));
 

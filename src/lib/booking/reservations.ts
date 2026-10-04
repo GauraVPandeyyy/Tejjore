@@ -7,12 +7,16 @@ import { stayNightlyRates } from "./operations";
 import { availableRoomsOnDate } from "./capacity";
 import { withBookingStore, readBookingStore } from "./store";
 import {
+  appendReservationAccessToken,
   createReservationAccessToken,
   guestCredentialsMatch,
   hashReservationAccessToken,
   normalizeGuestEmail,
   normalizeGuestPhone,
 } from "./access";
+
+/** A problem with the guest's request (shown to them), as opposed to a storage/server failure. */
+export class BookingInputError extends Error {}
 
 function createReference() {
   const now = new Date();
@@ -52,18 +56,23 @@ export async function createReservation(input: BookingRequestPayload): Promise<{
 
   const reservation = await withBookingStore(async (store) => {
     if (activeGuestHoldCount(store, input) >= 2) {
-      throw new Error("There are already active room holds for this contact. Complete or let an existing hold expire before creating another.");
+      throw new BookingInputError("There are already active room holds for this contact. Complete or let an existing hold expire before creating another.");
     }
 
     for (const date of stayDates(input.stay.checkIn, input.stay.checkOut)) {
       const capacity = availableRoomsOnDate(store, input.roomId, date);
       if (capacity.available < input.stay.rooms) {
-        throw new Error("Selected room category is no longer available for these dates.");
+        throw new BookingInputError("Selected room category is no longer available for these dates.");
       }
     }
 
     const nightlyRates = stayNightlyRates(store, input.roomId, input.stay.checkIn, input.stay.checkOut);
-    const pricing = calculateBookingPrice(input, 0, { nightlyRates });
+    let pricing: ReservationRecord["pricing"];
+    try {
+      pricing = calculateBookingPrice(input, 0, { nightlyRates });
+    } catch (error) {
+      throw new BookingInputError(error instanceof Error ? error.message : "The booking price could not be calculated.");
+    }
     const record: ReservationRecord = {
       ...input,
       id: randomUUID(),
@@ -94,7 +103,7 @@ export async function retrieveReservationWithCredentials(reference: string, emai
   const reservation = await withBookingStore((store) => {
     const item = store.reservations.find((record) => record.reference === reference.trim().toUpperCase());
     if (!item || !guestCredentialsMatch(item, email, phone)) return null;
-    item.accessTokenHash = hashReservationAccessToken(accessToken);
+    item.accessTokenHash = appendReservationAccessToken(item.accessTokenHash, accessToken);
     item.updatedAt = new Date().toISOString();
     return item;
   });
@@ -111,29 +120,37 @@ export async function updateReservation(reference: string, update: (reservation:
   });
 }
 
+/** True when every night of the stay still has enough rooms, ignoring this reservation's own hold. */
+export function reservationInventoryAvailable(
+  store: Awaited<ReturnType<typeof readBookingStore>>,
+  reservation: ReservationRecord,
+) {
+  return stayDates(reservation.stay.checkIn, reservation.stay.checkOut).every((date) =>
+    availableRoomsOnDate(store, reservation.roomId, date, { excludeReference: reservation.reference }).available >= reservation.stay.rooms,
+  );
+}
+
 export function applyVerifiedPaymentToStore(
   store: Awaited<ReturnType<typeof readBookingStore>>,
   reservation: ReservationRecord,
   paymentId: string,
+  /** Amount the gateway reports as received, in paise. Omit when the order amount is already trusted. */
+  receivedPaise?: number,
 ) {
   if (reservation.status === "confirmed" && reservation.paymentStatus === "paid") return reservation;
 
-  let inventoryConflict = false;
-  for (const date of stayDates(reservation.stay.checkIn, reservation.stay.checkOut)) {
-    const capacity = availableRoomsOnDate(store, reservation.roomId, date, { excludeReference: reservation.reference });
-    if (capacity.available < reservation.stay.rooms) {
-      inventoryConflict = true;
-      break;
-    }
-  }
+  const inventoryConflict = !reservationInventoryAvailable(store, reservation);
+  // Orders are always created for the full stay total, so any other amount needs staff attention.
+  const amountMismatch = receivedPaise != null && Number.isFinite(receivedPaise)
+    && receivedPaise !== Math.round(reservation.pricing.grandTotal * 100);
 
   const requiresOperationalReview = reservation.status === "cancelled" || reservation.status === "completed";
   reservation.paymentId = paymentId || reservation.paymentId;
   reservation.paymentStatus = "paid";
-  reservation.status = inventoryConflict || requiresOperationalReview ? "payment_review" : "confirmed";
+  reservation.status = inventoryConflict || requiresOperationalReview || amountMismatch ? "payment_review" : "confirmed";
   reservation.expiresAt = null;
-  reservation.pricing.amountPaid = reservation.pricing.grandTotal;
-  reservation.pricing.amountDue = 0;
+  reservation.pricing.amountPaid = amountMismatch ? receivedPaise / 100 : reservation.pricing.grandTotal;
+  reservation.pricing.amountDue = Math.max(0, reservation.pricing.grandTotal - reservation.pricing.amountPaid);
   reservation.updatedAt = new Date().toISOString();
   return reservation;
 }

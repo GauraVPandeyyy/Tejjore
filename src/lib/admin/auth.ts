@@ -1,34 +1,67 @@
 import "server-only";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, scryptSync, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 const COOKIE_NAME = "tejjora_admin_session";
 const SESSION_SECONDS = 8 * 60 * 60;
+const MIN_SECRET_LENGTH = 32;
 
 type AdminIdentity = { id: string; name: string };
 type SessionPayload = AdminIdentity & { exp: number };
 
-type ConfiguredAdmin = AdminIdentity & {
-  password: string;
-};
+// Either a scrypt hash from scripts/generate-admin-hash.mjs (ADMIN_USERS_JSON)
+// or a plain password from the legacy ADMIN_USER_ID / ADMIN_PASSWORD pair.
+type ConfiguredAdmin = AdminIdentity & (
+  | { passwordHash: string; password?: never }
+  | { password: string; passwordHash?: never }
+);
 
-function configuredAdmin(): ConfiguredAdmin | null {
-  const id = process.env.ADMIN_USER_ID?.trim();
-  const name = process.env.ADMIN_USER_NAME?.trim() || "Tejjora Admin";
-  const password = process.env.ADMIN_PASSWORD ?? "";
+function adminsFromJson(): ConfiguredAdmin[] {
+  const raw = process.env.ADMIN_USERS_JSON?.trim();
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.flatMap((item) => {
+      const record = item as { id?: unknown; name?: unknown; passwordHash?: unknown };
+      const id = typeof record.id === "string" ? record.id.trim() : "";
+      const passwordHash = typeof record.passwordHash === "string" ? record.passwordHash.trim() : "";
+      if (!id || !passwordHash.startsWith("scrypt$")) return [];
+      const name = typeof record.name === "string" && record.name.trim() ? record.name.trim() : "Tejjora Admin";
+      return [{ id, name, passwordHash }];
+    });
+  } catch {
+    return [];
+  }
+}
 
-  if (!id || !password) return null;
+function configuredAdmins(): ConfiguredAdmin[] {
+  const admins = adminsFromJson();
+  const legacyId = process.env.ADMIN_USER_ID?.trim();
+  const legacyPassword = process.env.ADMIN_PASSWORD ?? "";
+  if (legacyId && legacyPassword && !admins.some((admin) => admin.id.toLowerCase() === legacyId.toLowerCase())) {
+    admins.push({ id: legacyId, name: process.env.ADMIN_USER_NAME?.trim() || "Tejjora Admin", password: legacyPassword });
+  }
+  return admins;
+}
 
-  return {
-    id,
-    name,
-    password,
-  };
+function findAdmin(id: string) {
+  const wanted = id.trim().toLowerCase();
+  return configuredAdmins().find((admin) => admin.id.toLowerCase() === wanted) ?? null;
+}
+
+function verifyPasswordHash(password: string, stored: string) {
+  const [scheme, salt, hash] = stored.split("$");
+  if (scheme !== "scrypt" || !salt || !hash) return false;
+  if (!/^[0-9a-f]+$/i.test(hash) || hash.length % 2 !== 0) return false;
+  const actual = scryptSync(password, salt, hash.length / 2).toString("hex");
+  return safeEqual(actual, hash.toLowerCase());
 }
 
 function signingSecret() {
-  return process.env.ADMIN_SESSION_SECRET ?? "";
+  const secret = process.env.ADMIN_SESSION_SECRET ?? "";
+  return secret.length >= MIN_SECRET_LENGTH ? secret : "";
 }
 
 function base64url(value: string) {
@@ -52,15 +85,18 @@ export function authenticateAdmin(
   id: string,
   password: string,
 ): AdminIdentity | null {
-  const user = configuredAdmin();
+  const user = findAdmin(id);
 
-  if (!user) return null;
+  if (!user) {
+    // Spend comparable time on unknown IDs so response timing does not reveal valid ones.
+    scryptSync(password, "tejjora-unknown-admin", 64);
+    return null;
+  }
 
-  const suppliedId = id.trim().toLowerCase();
-  const expectedId = user.id.toLowerCase();
-
-  if (!safeEqual(suppliedId, expectedId)) return null;
-  if (!safeEqual(password, user.password)) return null;
+  const valid = user.passwordHash
+    ? verifyPasswordHash(password, user.passwordHash)
+    : user.password !== undefined && safeEqual(password, user.password);
+  if (!valid) return null;
 
   return {
     id: user.id,
@@ -69,7 +105,7 @@ export function authenticateAdmin(
 }
 
 export function adminAuthConfigured() {
-  return Boolean(configuredAdmin()) && signingSecret().length >= 32;
+  return configuredAdmins().length > 0 && Boolean(signingSecret());
 }
 
 export async function createAdminSession(identity: AdminIdentity) {
@@ -135,7 +171,7 @@ export async function getAdminSession(): Promise<AdminIdentity | null> {
       return null;
     }
 
-    const configured = configuredAdmin();
+    const configured = findAdmin(payload.id);
 
     if (!configured || configured.id !== payload.id) {
       return null;

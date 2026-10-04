@@ -1,17 +1,14 @@
 import { NextResponse } from "next/server";
 import { adminAuthConfigured, authenticateAdmin, createAdminSession } from "@/lib/admin/auth";
+import { clientAddress } from "@/lib/security/rateLimit";
 
 const attempts = new Map<string, { count: number; resetAt: number }>();
 const WINDOW_MS = 15 * 60_000;
 const MAX_ATTEMPTS = 8;
 
-function clientKey(request: Request) {
-  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-}
-
 export async function POST(request: Request) {
   if (!adminAuthConfigured()) return NextResponse.json({ error: "Admin access is not configured." }, { status: 503 });
-  const key = clientKey(request);
+  const key = clientAddress(request);
   const now = Date.now();
   const current = attempts.get(key);
   if (current && current.resetAt > now && current.count >= MAX_ATTEMPTS) {

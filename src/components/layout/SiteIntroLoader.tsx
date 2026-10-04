@@ -1,17 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function SiteIntroLoader() {
+  const startedRef = useRef(false);
   const [visible, setVisible] = useState(true);
   const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
-    const alreadySeen = sessionStorage.getItem("tejjora-intro-seen") === "1";
+    // startedRef survives StrictMode's dev-only effect re-run, so the flag written below
+    // is not mistaken for a previous visit.
+    if (!startedRef.current) {
+      // Storage can throw (blocked site data, some private modes); the intro then just plays.
+      let alreadySeen = false;
+      try {
+        alreadySeen = sessionStorage.getItem("tejjora-intro-seen") === "1";
+        // Mark as seen once it starts, so navigating away mid-intro does not replay it.
+        if (!alreadySeen) sessionStorage.setItem("tejjora-intro-seen", "1");
+      } catch {
+        // Ignore storage failures.
+      }
 
-    if (alreadySeen) {
-      setVisible(false);
-      return;
+      if (alreadySeen) {
+        setVisible(false);
+        return;
+      }
+      startedRef.current = true;
     }
 
     const leaveTimer = window.setTimeout(() => {
@@ -20,8 +34,6 @@ export function SiteIntroLoader() {
 
     const removeTimer = window.setTimeout(() => {
       setVisible(false);
-
-      sessionStorage.setItem("tejjora-intro-seen", "1");
     }, 1850);
 
     return () => {

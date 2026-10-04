@@ -68,7 +68,7 @@ export function ManageBooking({ initialReference = "" }: { initialReference?: st
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reference, email, phone }),
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({ error: `The booking service is unavailable (${response.status}). Please try again.` }));
       if (!response.ok) throw new Error(data?.error || "Reservation could not be retrieved.");
       setReservation(data as PublicReservationView);
       setReference(data.reference);
@@ -84,9 +84,9 @@ export function ManageBooking({ initialReference = "" }: { initialReference?: st
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reference: reservation.reference, accessToken: reservation.accessToken, ...data }),
     });
-    const verified = await response.json();
+    const verified = await response.json().catch(() => ({ error: `Payment verification is unavailable (${response.status}). Please try again.` }));
     if (!response.ok) throw new Error(verified?.error || "Payment verification failed.");
-    setReservation((current) => current ? { ...current, status: verified.status, paymentStatus: verified.paymentStatus, pricing: verified.pricing } : current);
+    setReservation((current) => current ? { ...current, status: verified.status, paymentStatus: verified.paymentStatus, pricing: verified.pricing, confirmationEmailStatus: verified.confirmationEmailStatus ?? current.confirmationEmailStatus } : current);
   }
 
   async function startPayment() {
@@ -98,7 +98,7 @@ export function ManageBooking({ initialReference = "" }: { initialReference?: st
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reference: reservation.reference, accessToken: reservation.accessToken }),
       });
-      const order = await response.json();
+      const order = await response.json().catch(() => ({ error: `Payment could not be started (${response.status}). Please try again.` }));
       if (!response.ok) throw new Error(order?.error || "Payment could not be started.");
       if (order.mode === "test") {
         await verifyPayment({ testSuccess: true });

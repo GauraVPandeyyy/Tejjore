@@ -87,19 +87,43 @@ function reservationFromRow(row: ReservationRow): ReservationRecord {
   };
 }
 
-async function loadStore(client: PoolClient): Promise<BookingStoreData> {
-  const [reservationsResult, blocksResult, webhookResult, operationsResult] = await Promise.all([
-    client.query<ReservationRow>("SELECT * FROM reservations ORDER BY created_at ASC"),
-    client.query<InventoryBlock>("SELECT id, room_id AS \"roomId\", date, quantity, reason FROM inventory_blocks ORDER BY date ASC, id ASC"),
-    client.query<{ event_id: string }>("SELECT event_id FROM processed_webhooks ORDER BY position ASC"),
-    client.query<{ config: BookingStoreData["operations"] }>("SELECT config FROM booking_operations WHERE id = 1"),
-  ]);
+async function loadStoreWithMeta(client: PoolClient): Promise<{ data: BookingStoreData; operationsStored: boolean }> {
+  // Sequential on purpose: a single pg client runs one query at a time anyway.
+  const reservationsResult = await client.query<ReservationRow>("SELECT * FROM reservations ORDER BY created_at ASC");
+  const blocksResult = await client.query<InventoryBlock>("SELECT id, room_id AS \"roomId\", date, quantity, reason FROM inventory_blocks ORDER BY date ASC, id ASC");
+  const webhookResult = await client.query<{ event_id: string }>("SELECT event_id FROM processed_webhooks ORDER BY position ASC");
+  const operationsResult = await client.query<{ config: BookingStoreData["operations"] }>("SELECT config FROM booking_operations WHERE id = 1");
 
   return {
-    reservations: reservationsResult.rows.map(reservationFromRow),
-    blocks: blocksResult.rows,
-    processedWebhookIds: webhookResult.rows.map((row: { event_id: string }) => row.event_id),
-    operations: normalizeOperationsConfig(operationsResult.rows[0]?.config ?? null),
+    data: {
+      reservations: reservationsResult.rows.map(reservationFromRow),
+      blocks: blocksResult.rows,
+      processedWebhookIds: webhookResult.rows.map((row: { event_id: string }) => row.event_id),
+      operations: normalizeOperationsConfig(operationsResult.rows[0]?.config ?? null),
+    },
+    operationsStored: operationsResult.rows.length > 0,
+  };
+}
+
+async function loadStore(client: PoolClient): Promise<BookingStoreData> {
+  return (await loadStoreWithMeta(client)).data;
+}
+
+type StoreSnapshot = {
+  reservations: Map<string, string>;
+  blocks: string;
+  processedWebhookIds: string;
+  operations: string | null;
+};
+
+// JSON snapshot of what was loaded, so persistStore writes only what the work changed
+// instead of rewriting every row on every booking action.
+function snapshotStore(data: BookingStoreData, operationsStored: boolean): StoreSnapshot {
+  return {
+    reservations: new Map(data.reservations.map((reservation) => [reservation.id, JSON.stringify(reservation)])),
+    blocks: JSON.stringify(data.blocks),
+    processedWebhookIds: JSON.stringify(data.processedWebhookIds),
+    operations: operationsStored ? JSON.stringify(normalizeOperationsConfig(data.operations)) : null,
   };
 }
 
@@ -160,30 +184,41 @@ async function saveReservation(client: PoolClient, reservation: ReservationRecor
   );
 }
 
-async function persistStore(client: PoolClient, data: BookingStoreData) {
-  for (const reservation of data.reservations) await saveReservation(client, reservation);
+async function persistStore(client: PoolClient, data: BookingStoreData, before: StoreSnapshot) {
+  for (const reservation of data.reservations) {
+    if (before.reservations.get(reservation.id) === JSON.stringify(reservation)) continue;
+    await saveReservation(client, reservation);
+  }
 
-  await client.query("DELETE FROM inventory_blocks");
-  for (const block of data.blocks) {
+  if (JSON.stringify(data.blocks) !== before.blocks) {
+    await client.query("DELETE FROM inventory_blocks");
+    for (const block of data.blocks) {
+      await client.query(
+        "INSERT INTO inventory_blocks (id, room_id, date, quantity, reason) VALUES ($1,$2,$3,$4,$5)",
+        [block.id, block.roomId, block.date, block.quantity, block.reason ?? null],
+      );
+    }
+  }
+
+  // Also written when no row exists yet, so the first write still records the configuration.
+  const operations = JSON.stringify(normalizeOperationsConfig(data.operations));
+  if (operations !== before.operations) {
     await client.query(
-      "INSERT INTO inventory_blocks (id, room_id, date, quantity, reason) VALUES ($1,$2,$3,$4,$5)",
-      [block.id, block.roomId, block.date, block.quantity, block.reason ?? null],
+      `INSERT INTO booking_operations (id, config, updated_at)
+       VALUES (1, $1::jsonb, NOW())
+       ON CONFLICT (id) DO UPDATE SET config = EXCLUDED.config, updated_at = NOW()`,
+      [operations],
     );
   }
 
-  await client.query(
-    `INSERT INTO booking_operations (id, config, updated_at)
-     VALUES (1, $1::jsonb, NOW())
-     ON CONFLICT (id) DO UPDATE SET config = EXCLUDED.config, updated_at = NOW()`,
-    [JSON.stringify(normalizeOperationsConfig(data.operations))],
-  );
-
-  await client.query("DELETE FROM processed_webhooks");
-  for (const [position, eventId] of data.processedWebhookIds.entries()) {
-    await client.query(
-      "INSERT INTO processed_webhooks (event_id, position) VALUES ($1,$2) ON CONFLICT (event_id) DO UPDATE SET position = EXCLUDED.position",
-      [eventId, position],
-    );
+  if (JSON.stringify(data.processedWebhookIds) !== before.processedWebhookIds) {
+    await client.query("DELETE FROM processed_webhooks");
+    for (const [position, eventId] of data.processedWebhookIds.entries()) {
+      await client.query(
+        "INSERT INTO processed_webhooks (event_id, position) VALUES ($1,$2) ON CONFLICT (event_id) DO UPDATE SET position = EXCLUDED.position",
+        [eventId, position],
+      );
+    }
   }
 }
 
@@ -203,9 +238,10 @@ export async function withPostgresBookingStore<T>(work: (data: BookingStoreData)
     // Hotel booking writes are low-volume. A single transaction advisory lock prevents
     // two app instances from consuming the same inventory slot concurrently.
     await client.query("SELECT pg_advisory_xact_lock(84322129)");
-    const data = await loadStore(client);
+    const { data, operationsStored } = await loadStoreWithMeta(client);
+    const before = snapshotStore(data, operationsStored);
     const result = await work(data);
-    await persistStore(client, data);
+    await persistStore(client, data, before);
     await client.query("COMMIT");
     return result;
   } catch (error) {

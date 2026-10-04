@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { hotel } from "@/data/hotel";
 import { useSiteChrome } from "@/components/layout/SiteChromeProvider";
+import { todayInIndia } from "@/lib/booking/validation";
 
 type GuestState = {
   adults: number;
@@ -122,7 +123,8 @@ export function BookingSearch({ className = "" }: Props) {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
   const { menuOpen, toggleMenu } = useSiteChrome();
-  const today = useMemo(() => toDateValue(new Date()), []);
+  // Hotel (India) date, matching /book and the server's past-date check.
+  const today = useMemo(() => todayInIndia(), []);
 
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
@@ -185,6 +187,11 @@ export function BookingSearch({ className = "" }: Props) {
   function validate() {
     if (!checkIn || !checkOut) {
       setError("Choose your check-in and check-out dates.");
+      return false;
+    }
+
+    if (checkIn < today) {
+      setError("Check-in cannot be in the past.");
       return false;
     }
 

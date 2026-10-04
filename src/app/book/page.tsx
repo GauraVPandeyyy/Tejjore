@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { BookingExperience } from "@/components/booking/BookingExperience";
 import { bookingConfig } from "@/data/booking";
+import { guestLimits } from "@/lib/booking/validation";
 import type { RoomId } from "@/types/hotel";
 
 export const metadata: Metadata = {
@@ -15,9 +16,12 @@ function one(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function number(value: string | undefined, fallback: number) {
+/** Whole number within the server's limits; anything else (blank, 2.5, "abc") uses the fallback. */
+function count(value: string | undefined, fallback: number, limits: { min: number; max: number }) {
+  if (value == null || value.trim() === "") return fallback;
   const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+  if (!Number.isInteger(parsed)) return fallback;
+  return Math.min(limits.max, Math.max(limits.min, parsed));
 }
 
 function roomId(value: string | undefined): RoomId | undefined {
@@ -39,6 +43,9 @@ export default async function BookPage({ searchParams }: { searchParams: SearchP
   const checkIn = one(params.checkIn);
   const checkOut = one(params.checkOut);
   const room = roomId(one(params.room));
+  const adults = count(one(params.adults), 2, guestLimits.adults);
+  // Each room needs at least one adult (enforced by the server), so never start with more rooms than adults.
+  const roomCount = Math.min(count(one(params.rooms), 1, guestLimits.rooms), adults);
 
   return (
     <main className="booking-page">
@@ -46,9 +53,9 @@ export default async function BookPage({ searchParams }: { searchParams: SearchP
         initial={{
           checkIn,
           checkOut,
-          adults: number(one(params.adults), 2),
-          children: number(one(params.children), 0),
-          rooms: number(one(params.rooms), 1),
+          adults,
+          children: count(one(params.children), 0, guestLimits.children),
+          rooms: roomCount,
           roomId: room,
           ratePlanId: ratePlanId(one(params.rate)),
           addonIds: addonIds(one(params.addons)),

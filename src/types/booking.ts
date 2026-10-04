@@ -3,6 +3,7 @@ import type { RoomId } from "./hotel";
 export type BookingStep = "stay" | "room" | "checkout";
 export type ReservationStatus = "initiated" | "payment_pending" | "payment_review" | "confirmed" | "payment_failed" | "cancelled" | "completed";
 export type PaymentStatus = "not_started" | "pending" | "paid" | "failed" | "refunded";
+export type ConfirmationEmailStatus = "not_sent" | "sending" | "sent" | "failed" | "unavailable";
 
 export type BookingStay = {
   checkIn: string;
@@ -76,7 +77,7 @@ export type ReservationRecord = BookingRequestPayload & {
   paymentId?: string;
   staffNotes?: string;
   accessTokenHash?: string;
-  confirmationEmailStatus?: "not_sent" | "sent" | "failed" | "unavailable";
+  confirmationEmailStatus?: ConfirmationEmailStatus;
   confirmationEmailSentAt?: string;
   confirmationEmailError?: string;
 };
@@ -91,7 +92,7 @@ export type BookingRequestResponse = {
   paymentMode: "razorpay" | "test" | "unavailable";
   accessToken: string;
   bookingReceivedEmailStatus?: "sent" | "failed" | "unavailable";
-  confirmationEmailStatus?: "not_sent" | "sent" | "failed" | "unavailable" | "not_applicable";
+  confirmationEmailStatus?: ConfirmationEmailStatus | "not_applicable";
 };
 
 export type PublicReservationView = {
@@ -110,7 +111,7 @@ export type PublicReservationView = {
   paymentAvailable: boolean;
   paymentMode: "razorpay" | "test" | "unavailable";
   accessToken: string;
-  confirmationEmailStatus?: "not_sent" | "sent" | "failed" | "unavailable";
+  confirmationEmailStatus?: ConfirmationEmailStatus;
   confirmationEmailSentAt?: string;
 };
 
