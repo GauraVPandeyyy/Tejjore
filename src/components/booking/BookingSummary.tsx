@@ -1,7 +1,7 @@
 import { bookingConfig } from "@/data/booking";
 import { formatMoney } from "@/data/commerce";
 import { rooms } from "@/data/rooms";
-import { formatStayDates } from "@/lib/booking/request";
+import { calculateNights, formatStayDates } from "@/lib/booking/request";
 import { calculateBookingPrice } from "@/lib/booking/pricing";
 import type { PublicAvailabilityRoom, BookingDraft, BookingRequestPayload } from "@/types/booking";
 
@@ -14,7 +14,7 @@ export function BookingSummary({ draft, availability = [] }: { draft: BookingDra
   if (draft.roomId && draft.ratePlanId && draft.stay.checkIn && draft.stay.checkOut && rate?.onlineBookable) {
     try {
       const payload: BookingRequestPayload = { stay: draft.stay, roomId: draft.roomId, ratePlanId: draft.ratePlanId, addonIds: draft.addonIds, ...(draft.promoCode?.trim() ? { promoCode: draft.promoCode.trim().toUpperCase() } : {}), guest: draft.guest, source: "website" };
-      pricing = calculateBookingPrice(payload, 0, { baseRate: inventory?.baseRate, nightlyRates: inventory?.nightlyRates });
+      pricing = calculateBookingPrice(payload, 0, { baseRate: inventory?.baseRate, nightlyRates: inventory?.nightlyRates, deferPromo: true });
     } catch { pricing = null; }
   }
 
@@ -24,7 +24,7 @@ export function BookingSummary({ draft, availability = [] }: { draft: BookingDra
       <h2>{room?.name ?? "Choose your room"}</h2>
       <dl className="booking-summary__facts">
         <div><dt>Stay</dt><dd>{draft.stay.checkIn && draft.stay.checkOut ? formatStayDates(draft.stay.checkIn, draft.stay.checkOut) : "Choose dates"}</dd></div>
-        <div><dt>Nights</dt><dd>{pricing?.nights || "—"}</dd></div>
+        <div><dt>Nights</dt><dd>{pricing?.nights || calculateNights(draft.stay.checkIn, draft.stay.checkOut) || "—"}</dd></div>
         <div><dt>Guests</dt><dd>{draft.stay.adults} adult{draft.stay.adults === 1 ? "" : "s"}{draft.stay.children ? ` · ${draft.stay.children} child${draft.stay.children === 1 ? "" : "ren"}` : ""}</dd></div>
         <div><dt>Rooms</dt><dd>{draft.stay.rooms}</dd></div>
         <div><dt>Rate plan</dt><dd>{rate?.label ?? "Choose a rate plan"}</dd></div>
@@ -36,7 +36,7 @@ export function BookingSummary({ draft, availability = [] }: { draft: BookingDra
         <strong>{pricing ? formatMoney(pricing.grandTotal) : "—"}</strong>
         {pricing && <small>{formatMoney(pricing.baseRatePerRoomNight)} / room / first night · {pricing.nights} night{pricing.nights === 1 ? "" : "s"}</small>}
         {pricing?.nightlyRates && new Set(pricing.nightlyRates.map((item)=>item.rate)).size > 1 && <small>Nightly rates vary by date; the total above includes configured date overrides.</small>}
-        {pricing?.discount ? <small>Promotional discount applied: −{formatMoney(pricing.discount)}.</small> : null}
+        {pricing && draft.promoCode?.trim() ? <small>Promo code is checked and any discount applied when your room is held.</small> : null}
         {pricing?.hasUnconfiguredCharges && <small>Requested extras with unconfigured prices are not included in this total.</small>}
       </div>
     </aside>

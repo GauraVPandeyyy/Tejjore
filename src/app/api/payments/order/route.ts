@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { commerceConfig } from "@/data/commerce";
 import { reservationAccessMatches } from "@/lib/booking/access";
+import { reservationConsumesInventory } from "@/lib/booking/capacity";
+import { reservationInventoryAvailable } from "@/lib/booking/reservations";
 import { withBookingStore } from "@/lib/booking/store";
 import { createPaymentOrder, paymentMode, paymentPublicKey } from "@/lib/payments/razorpay";
 import { rateLimit } from "@/lib/security/rateLimit";
@@ -35,7 +37,9 @@ export async function POST(request: Request) {
       }
 
       const mode = paymentMode();
-      if (reservation.paymentOrderId && reservation.paymentStatus === "pending" && mode !== "unavailable") {
+      // A failed attempt leaves the Razorpay order payable, so retries reuse it.
+      const orderReusable = reservation.paymentStatus === "pending" || reservation.paymentStatus === "failed";
+      if (reservation.paymentOrderId && orderReusable && mode !== "unavailable") {
         return {
           id: reservation.paymentOrderId,
           amount: reservation.pricing.amountDue * 100,
@@ -44,6 +48,12 @@ export async function POST(request: Request) {
           mode,
           keyId: mode === "razorpay" ? paymentPublicKey() : null,
         };
+      }
+
+      // A reservation whose hold no longer counts against inventory (e.g. a legacy
+      // payment_failed record) must not be re-held without checking the rooms are still free.
+      if (!reservationConsumesInventory(reservation) && !reservationInventoryAvailable(store, reservation)) {
+        throw new Error("ROOMS_UNAVAILABLE");
       }
 
       const created = await createPaymentOrder(reservation);
@@ -61,7 +71,8 @@ export async function POST(request: Request) {
     if (code === "ACCESS_DENIED") return NextResponse.json({ error: "Reservation access could not be verified." }, { status: 403 });
     if (code === "PAYMENT_RECEIVED") return NextResponse.json({ error: "Payment has already been received for this reservation." }, { status: 409 });
     if (code === "PAYMENT_CLOSED") return NextResponse.json({ error: "This reservation can no longer accept online payment." }, { status: 409 });
-    if (code === "HOLD_EXPIRED") return NextResponse.json({ error: "The temporary inventory hold has expired. Please search again." }, { status: 409 });
+    if (code === "ROOMS_UNAVAILABLE") return NextResponse.json({ error: "The selected rooms are no longer available for these dates. Please search again." }, { status: 409 });
+    if (code === "HOLD_EXPIRED")return NextResponse.json({ error: "The temporary inventory hold has expired. Please search again." }, { status: 409 });
     return NextResponse.json({ error: error instanceof Error ? error.message : "Payment order could not be created." }, { status: 503 });
   }
 }

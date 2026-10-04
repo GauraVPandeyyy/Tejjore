@@ -39,7 +39,9 @@ const taxConfigured = process.env.NEXT_PUBLIC_TAX_CONFIGURED === "true";
 const serviceChargeConfigured = process.env.NEXT_PUBLIC_SERVICE_CHARGE_CONFIGURED === "true";
 const ratePlanOverrides = parseJsonArray<RatePlanOverride>(process.env.NEXT_PUBLIC_RATE_PLAN_CONFIG_JSON);
 const addonOverrides = parseJsonArray<AddonOverride>(process.env.NEXT_PUBLIC_ADDON_CONFIG_JSON);
-const promoRulesRaw = parseJsonArray<PromoRule>(process.env.NEXT_PUBLIC_PROMO_CODES_JSON);
+// Server-only on purpose: a NEXT_PUBLIC_ value would be inlined into the browser bundle and
+// publish every promo code. In client bundles this is undefined, so promoRules is empty there.
+const promoRulesRaw = parseJsonArray<PromoRule>(process.env.PROMO_CODES_JSON);
 
 const baseRatePlans = [
   {

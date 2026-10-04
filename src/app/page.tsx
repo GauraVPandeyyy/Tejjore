@@ -29,7 +29,7 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <main className="home-page home-page--v2" id="main-content">
+    <main className="home-page home-page--v2">
       <SiteIntroLoader />
       <StructuredData data={[hotelSchema, faqSchema]} />
       <BookingSearch />

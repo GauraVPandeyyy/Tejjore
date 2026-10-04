@@ -11,7 +11,8 @@ export function calculateNights(checkIn: string, checkOut: string) {
 export function calculateBookingPrice(
   input: BookingRequestPayload,
   amountPaid = 0,
-  context?: { baseRate?: number; nightlyRates?: Array<{ date: string; rate: number }> },
+  /** deferPromo: browser previews cannot see promo rules (server-only); the server applies the code. */
+  context?: { baseRate?: number; nightlyRates?: Array<{ date: string; rate: number }>; deferPromo?: boolean },
 ): PriceBreakdown {
   const nights = calculateNights(input.stay.checkIn, input.stay.checkOut);
   if (nights < 1) throw new Error("Invalid stay dates.");
@@ -59,7 +60,7 @@ export function calculateBookingPrice(
   const subtotalBeforeDiscount = roomSubtotal + rateAdjustment + extraGuestCharge + childrenCharge + extrasTotal;
 
   let discount = 0;
-  if (input.promoCode) {
+  if (input.promoCode && !context?.deferPromo) {
     const code = input.promoCode.trim().toUpperCase();
     const promo = commerceConfig.promoRules.find((item) => item.code === code && item.enabled);
     const activeForStay = promo

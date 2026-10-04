@@ -7,6 +7,15 @@ import { deliverReservationConfirmation } from "@/lib/email/confirmation";
 
 const paymentEvents = new Set(["payment.captured", "order.paid", "payment.failed"]);
 
+type RazorpayNotes = { booking_reference?: string };
+type RazorpayWebhookPayload = {
+  event?: string;
+  payload?: {
+    payment?: { entity?: { id?: string; order_id?: string; amount?: number; notes?: RazorpayNotes } };
+    order?: { entity?: { id?: string; amount_paid?: number; notes?: RazorpayNotes } };
+  };
+};
+
 export async function POST(request: Request) {
   const raw = await request.text();
   const signature = request.headers.get("x-razorpay-signature") ?? "";
@@ -15,9 +24,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid webhook signature." }, { status: 401 });
   }
 
-  let payload: any;
+  let payload: RazorpayWebhookPayload;
   try {
-    payload = JSON.parse(raw);
+    payload = JSON.parse(raw) as RazorpayWebhookPayload;
   } catch {
     return NextResponse.json({ error: "Invalid webhook payload." }, { status: 400 });
   }
@@ -29,6 +38,8 @@ export async function POST(request: Request) {
   const order = payload?.payload?.order?.entity;
   const reference = String(payment?.notes?.booking_reference || order?.notes?.booking_reference || "").trim().toUpperCase();
   const orderId = String(payment?.order_id || order?.id || "");
+  const rawReceived = payment?.amount ?? order?.amount_paid;
+  const receivedPaise = typeof rawReceived === "number" && Number.isFinite(rawReceived) ? rawReceived : undefined;
   const eventId = suppliedEventId || createHash("sha256").update(raw).digest("hex");
   const looksLikeTejjoraBooking = /^TLV-\d{6}-[A-Z0-9]{6}$/.test(reference);
 
@@ -47,7 +58,7 @@ export async function POST(request: Request) {
 
     if (event === "payment.captured" || event === "order.paid") {
       if (orderMatches) {
-        applyVerifiedPaymentToStore(store, reservation, payment?.id ?? reservation.paymentId ?? "");
+        applyVerifiedPaymentToStore(store, reservation, payment?.id ?? reservation.paymentId ?? "", receivedPaise);
         review = reservation.status === "payment_review";
       } else {
         // A valid, signed payment tied to the booking reference but to an older/different
@@ -57,14 +68,15 @@ export async function POST(request: Request) {
         reservation.paymentStatus = "paid";
         reservation.status = "payment_review";
         reservation.expiresAt = null;
-        reservation.pricing.amountPaid = reservation.pricing.grandTotal;
-        reservation.pricing.amountDue = 0;
+        reservation.pricing.amountPaid = receivedPaise != null ? receivedPaise / 100 : reservation.pricing.grandTotal;
+        reservation.pricing.amountDue = Math.max(0, reservation.pricing.grandTotal - reservation.pricing.amountPaid);
         reservation.updatedAt = new Date().toISOString();
         review = true;
       }
     } else if (event === "payment.failed" && orderMatches && reservation.paymentStatus !== "paid") {
+      // Razorpay lets the guest retry within the same checkout/order, so a failed attempt
+      // must not release the room hold. The hold simply runs to its normal expiry.
       reservation.paymentStatus = "failed";
-      reservation.status = "payment_failed";
       reservation.updatedAt = new Date().toISOString();
     }
 

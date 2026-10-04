@@ -22,7 +22,7 @@ function addDays(value: string, days: number) {
 function mapsSearchUrl(query: string) { return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`; }
 
 export function PlanMyStay({ index = "01" }: { index?: string }) {
-  const today = useMemo(todayValue, []);
+  const today = useMemo(() => todayValue(), []);
   const [purpose, setPurpose] = useState<TripPurpose>("weekend");
   const [arrival, setArrival] = useState<ArrivalSource>("local");
   const [checkIn, setCheckIn] = useState("");

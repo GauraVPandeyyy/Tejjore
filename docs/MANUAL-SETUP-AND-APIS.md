@@ -87,16 +87,16 @@ BOOKING_EMAIL_FROM="Tejjora Lake View <bookings@your-domain.example>"
 
 The booking itself does not depend on email delivery. If email is unavailable or fails, the confirmed reservation remains valid and the guest can use Manage Booking.
 
-## 6. Optional OpenAI concierge language layer
+## 6. Optional Gemini concierge language layer
 
 **Why:** make structured concierge answers read more naturally while keeping rates, availability, policies and booking/payment state grounded in application data.
 
-Create an OpenAI API key and choose an available text model.
+Create a Google Gemini API key and choose an available text model.
 
 ```env
-CONCIERGE_LANGUAGE_PROVIDER=openai
-OPENAI_API_KEY=
-OPENAI_CONCIERGE_MODEL=
+CONCIERGE_LANGUAGE_PROVIDER=gemini
+GEMINI_API_KEY=
+GEMINI_CONCIERGE_MODEL=
 ```
 
 If any of these are absent, the deterministic hybrid concierge remains fully functional. Never make the model the source of truth for dynamic hotel facts.
@@ -135,12 +135,14 @@ NEXT_PUBLIC_EXTRA_ADULT_CHARGE=
 NEXT_PUBLIC_CHILD_CHARGE=
 NEXT_PUBLIC_RATE_PLAN_CONFIG_JSON=
 NEXT_PUBLIC_ADDON_CONFIG_JSON=
-NEXT_PUBLIC_PROMO_CODES_JSON=
+PROMO_CODES_JSON=
 NEXT_PUBLIC_TAX_CONFIGURED=false
 NEXT_PUBLIC_TAX_RATE_BPS=0
 NEXT_PUBLIC_SERVICE_CHARGE_CONFIGURED=false
 NEXT_PUBLIC_SERVICE_CHARGE_BPS=0
 ```
+
+`PROMO_CODES_JSON` is deliberately server-only so promo codes are never published in the browser bundle. The booking page shows that an entered code will be checked; the discount is applied when the room is held.
 
 The hotel must also provide its final cancellation/refund, check-in/check-out, ID, child and extra-person policies before they are published as contractual terms.
 

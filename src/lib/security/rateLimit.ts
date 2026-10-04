@@ -2,9 +2,12 @@ type Bucket = { count: number; resetAt: number };
 
 const buckets = new Map<string, Bucket>();
 
-function clientAddress(request: Request) {
-  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-    || request.headers.get("x-real-ip")?.trim()
+// The first X-Forwarded-For entry is supplied by the client and can be spoofed to dodge
+// limits. Prefer the proxy-set x-real-ip, then the entry appended by the nearest proxy.
+export function clientAddress(request: Request) {
+  const forwarded = request.headers.get("x-forwarded-for")?.split(",").map((part) => part.trim()).filter(Boolean);
+  return request.headers.get("x-real-ip")?.trim()
+    || forwarded?.[forwarded.length - 1]
     || "unknown";
 }
 

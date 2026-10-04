@@ -12,6 +12,16 @@ type MarzipanoViewerProps = {
 
 type ViewerState = "fallback" | "loading" | "immersive" | "error";
 
+// Minimal shapes of the untyped Marzipano objects this component touches.
+type MarzipanoViewerInstance = { destroy?: () => void };
+type MarzipanoView = {
+  yaw: () => number;
+  setYaw: (yaw: number) => void;
+  fov: () => number;
+  setFov: (fov: number) => void;
+  setParameters: (params: VirtualTourScene["initialView"]) => void;
+};
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
@@ -19,8 +29,8 @@ function clamp(value: number, min: number, max: number) {
 export function MarzipanoViewer({ scene, onSceneChange }: MarzipanoViewerProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const shellRef = useRef<HTMLDivElement>(null);
-  const viewerRef = useRef<any>(null);
-  const viewRef = useRef<any>(null);
+  const viewerRef = useRef<MarzipanoViewerInstance | null>(null);
+  const viewRef = useRef<MarzipanoView | null>(null);
   const [viewerState, setViewerState] = useState<ViewerState>(scene.panoramaReady ? "loading" : "fallback");
   const [fullscreen, setFullscreen] = useState(false);
 
@@ -48,10 +58,10 @@ export function MarzipanoViewer({ scene, onSceneChange }: MarzipanoViewerProps) 
 
     async function boot() {
       try {
-        const module = await import("marzipano");
+        const marzipanoModule = await import("marzipano");
         if (cancelled || !stageRef.current) return;
 
-        const Marzipano = (module as any).default ?? module;
+        const Marzipano = marzipanoModule.default ?? marzipanoModule;
         const viewer = new Marzipano.Viewer(stageRef.current, {
           controls: { mouseViewMode: "drag" },
         });

@@ -16,5 +16,5 @@ for(const route of ["/dining","/experience","/gallery","/location"]){if(!nav.inc
 const vt=fs.readFileSync(path.join(root,"src/data/virtualTour.ts"),"utf8");
 if(!vt.includes('id: "demo-room"')||!vt.includes('panoramaReady: true')){console.error("Public reference panorama not active");process.exit(1)}
 const env=fs.readFileSync(path.join(root,".env.example"),"utf8");
-for(const key of ["DATABASE_URL","RESEND_API_KEY","BOOKING_EMAIL_FROM","OPENAI_API_KEY","OPENAI_CONCIERGE_MODEL","NEXT_PUBLIC_SITE_URL"]){if(!env.includes(key+"=")){console.error("Env example missing "+key);process.exit(1)}}
+for(const key of ["DATABASE_URL","RESEND_API_KEY","BOOKING_EMAIL_FROM","GEMINI_API_KEY","GEMINI_CONCIERGE_MODEL","NEXT_PUBLIC_SITE_URL"]){if(!env.includes(key+"=")){console.error("Env example missing "+key);process.exit(1)}}
 console.log(`V2 redesign validation PASS (${must.length} required files + IA/booking/panorama/env checks)`);

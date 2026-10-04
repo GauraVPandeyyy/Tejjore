@@ -16,9 +16,20 @@ function safeEqual(a: string, b: string) {
   return aa.length === bb.length && timingSafeEqual(aa, bb);
 }
 
+// accessTokenHash holds up to MAX_ACCESS_TOKENS space-separated hashes so that retrieving a
+// booking on another device does not invalidate the token held by the original tab.
+const MAX_ACCESS_TOKENS = 5;
+
+export function appendReservationAccessToken(existingHashes: string | undefined, token: string) {
+  const hashes = (existingHashes ?? "").split(" ").filter(Boolean);
+  hashes.push(hashReservationAccessToken(token));
+  return hashes.slice(-MAX_ACCESS_TOKENS).join(" ");
+}
+
 export function reservationAccessMatches(reservation: ReservationRecord, token: string | null | undefined) {
   if (!reservation.accessTokenHash || !token) return false;
-  return safeEqual(reservation.accessTokenHash, hashReservationAccessToken(token));
+  const supplied = hashReservationAccessToken(token);
+  return reservation.accessTokenHash.split(" ").filter(Boolean).some((hash) => safeEqual(hash, supplied));
 }
 
 export function normalizeGuestEmail(value: string) {
