@@ -13,6 +13,6 @@ if(!reservation.includes('payment_pending')||!(reservation.includes('availableRo
 const store=read("src/lib/booking/store.ts");
 if(!store.includes('rename(temp, target)')) errors.push("atomic JSON store write missing");
 const ui=read("src/components/booking/BookingExperience.tsx");
-for(const needle of ['websiteInventoryProvider.search','Hold room & continue to payment','Configured total','Development inventory is active']) if(!ui.includes(needle)) errors.push(`booking UI missing ${needle}`);
+for(const needle of ['websiteInventoryProvider.search','Hold room & continue to payment','api/reservations/quote','Development inventory is active']) if(!ui.includes(needle)) errors.push(`booking UI missing ${needle}`);
 if(errors.length){console.error("Stage 12.6 validation FAILED");errors.forEach(e=>console.error(`- ${e}`));process.exit(1)}
 console.log("Stage 12.6 validation: PASS");

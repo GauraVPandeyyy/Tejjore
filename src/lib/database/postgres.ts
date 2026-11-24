@@ -4,8 +4,10 @@ import type { ReservationRecord } from "@/types/booking";
 import type { RoomId } from "@/types/hotel";
 import type { BookingStoreData, InventoryBlock } from "@/lib/booking/store";
 import { normalizeOperationsConfig } from "@/lib/booking/operations";
+import { installDatabaseDnsRetry } from "./dnsRetry";
+import { databaseConnectionConfig } from "./tls";
 
-const globalForPg = globalThis as typeof globalThis & { __tejjoraPgPool?: Pool };
+const globalForPg = globalThis as typeof globalThis & { __tejjoraPgPool?: Pool; __tejjoraPaymentsColumn?: Promise<boolean> };
 
 export function postgresConfigured() {
   return Boolean(process.env.DATABASE_URL?.trim());
@@ -14,15 +16,38 @@ export function postgresConfigured() {
 function pool() {
   if (!postgresConfigured()) throw new Error("DATABASE_URL is not configured.");
   if (!globalForPg.__tejjoraPgPool) {
+    const config = databaseConnectionConfig();
+    if (config.warning) console.warn(`[database] ${config.warning}`);
+    installDatabaseDnsRetry(config.connectionString);
     globalForPg.__tejjoraPgPool = new Pool({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: config.connectionString,
       max: Number(process.env.DATABASE_POOL_MAX || 8),
       idleTimeoutMillis: 30_000,
-      connectionTimeoutMillis: 5_000,
-      ssl: process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : undefined,
+      connectionTimeoutMillis: 10_000,
+      ssl: config.ssl,
     });
   }
   return globalForPg.__tejjoraPgPool;
+}
+
+/** Single parameterised query outside the booking-store transaction (used by the rate limiter). */
+export async function queryPostgres<Row extends Record<string, unknown>>(text: string, params: unknown[] = []) {
+  return pool().query<Row>(text, params);
+}
+
+// The payment ledger column arrives with db/migrations/002. Booking writes refuse to run
+// without it, because silently dropping payment records would break amount accumulation.
+async function assertPaymentsColumn(client: PoolClient) {
+  globalForPg.__tejjoraPaymentsColumn ??= client
+    .query("SELECT 1 FROM information_schema.columns WHERE table_name = 'reservations' AND column_name = 'payments'")
+    .then((result) => (result.rowCount ?? 0) > 0);
+  let present = false;
+  try {
+    present = await globalForPg.__tejjoraPaymentsColumn;
+  } finally {
+    if (!present) globalForPg.__tejjoraPaymentsColumn = undefined;
+  }
+  if (!present) throw new Error("Database migration 002 (payment ledger) has not been applied. Run: npm run db:migrate");
 }
 
 type ReservationRow = {
@@ -52,6 +77,7 @@ type ReservationRow = {
   confirmation_email_status: ReservationRecord["confirmationEmailStatus"] | null;
   confirmation_email_sent_at: string | null;
   confirmation_email_error: string | null;
+  payments?: ReservationRecord["payments"] | null;
 };
 
 function reservationFromRow(row: ReservationRow): ReservationRecord {
@@ -84,6 +110,7 @@ function reservationFromRow(row: ReservationRow): ReservationRecord {
     ...(row.confirmation_email_status ? { confirmationEmailStatus: row.confirmation_email_status } : {}),
     ...(row.confirmation_email_sent_at ? { confirmationEmailSentAt: row.confirmation_email_sent_at } : {}),
     ...(row.confirmation_email_error ? { confirmationEmailError: row.confirmation_email_error } : {}),
+    ...(Array.isArray(row.payments) && row.payments.length ? { payments: row.payments } : {}),
   };
 }
 
@@ -134,10 +161,10 @@ async function saveReservation(client: PoolClient, reservation: ReservationRecor
       rate_plan_id, addon_ids, promo_code, guest, source, pricing, status,
       payment_status, created_at, updated_at, expires_at, payment_order_id,
       payment_id, staff_notes, access_token_hash, confirmation_email_status,
-      confirmation_email_sent_at, confirmation_email_error
+      confirmation_email_sent_at, confirmation_email_error, payments
     ) VALUES (
       $1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11,$12::jsonb,$13,$14::jsonb,$15,
-      $16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26
+      $16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27::jsonb
     )
     ON CONFLICT (id) DO UPDATE SET
       reference=EXCLUDED.reference, room_id=EXCLUDED.room_id,
@@ -152,7 +179,8 @@ async function saveReservation(client: PoolClient, reservation: ReservationRecor
       access_token_hash=EXCLUDED.access_token_hash,
       confirmation_email_status=EXCLUDED.confirmation_email_status,
       confirmation_email_sent_at=EXCLUDED.confirmation_email_sent_at,
-      confirmation_email_error=EXCLUDED.confirmation_email_error`,
+      confirmation_email_error=EXCLUDED.confirmation_email_error,
+      payments=EXCLUDED.payments`,
     [
       reservation.id,
       reservation.reference,
@@ -180,6 +208,7 @@ async function saveReservation(client: PoolClient, reservation: ReservationRecor
       reservation.confirmationEmailStatus ?? null,
       reservation.confirmationEmailSentAt ?? null,
       reservation.confirmationEmailError ?? null,
+      JSON.stringify(reservation.payments ?? []),
     ],
   );
 }
@@ -222,6 +251,12 @@ async function persistStore(client: PoolClient, data: BookingStoreData, before: 
   }
 }
 
+/** Rates and inventory settings only (public price display); no reservations are read. */
+export async function readPostgresOperationsConfig() {
+  const result = await pool().query<{ config: BookingStoreData["operations"] }>("SELECT config FROM booking_operations WHERE id = 1");
+  return normalizeOperationsConfig(result.rows[0]?.config ?? null);
+}
+
 export async function readPostgresBookingStore() {
   const client = await pool().connect();
   try {
@@ -238,6 +273,7 @@ export async function withPostgresBookingStore<T>(work: (data: BookingStoreData)
     // Hotel booking writes are low-volume. A single transaction advisory lock prevents
     // two app instances from consuming the same inventory slot concurrently.
     await client.query("SELECT pg_advisory_xact_lock(84322129)");
+    await assertPaymentsColumn(client);
     const { data, operationsStored } = await loadStoreWithMeta(client);
     const before = snapshotStore(data, operationsStored);
     const result = await work(data);

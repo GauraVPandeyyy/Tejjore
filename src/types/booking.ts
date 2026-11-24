@@ -64,6 +64,23 @@ export type BookingRequestPayload = {
   source: "website";
 };
 
+/**
+ * One gateway payment applied to a reservation. The ledger is append-only and keyed by
+ * paymentId, so duplicate events are idempotent and a second payment never overwrites the first.
+ * - amountSource "gateway": amount reported by Razorpay (webhook).
+ * - amountSource "order": inferred from the reservation's own order (browser verify / test mode).
+ * - amountSource "unverified": a signed payment whose amount could not be established; needs review.
+ */
+export type PaymentLedgerEntry = {
+  paymentId: string;
+  amountPaise: number;
+  amountSource: "gateway" | "order" | "unverified";
+  orderId?: string;
+  orderMatched: boolean;
+  source: "browser-verify" | "webhook" | "test" | "legacy";
+  recordedAt: string;
+};
+
 export type ReservationRecord = BookingRequestPayload & {
   id: string;
   reference: string;
@@ -75,6 +92,7 @@ export type ReservationRecord = BookingRequestPayload & {
   pricing: PriceBreakdown;
   paymentOrderId?: string;
   paymentId?: string;
+  payments?: PaymentLedgerEntry[];
   staffNotes?: string;
   accessTokenHash?: string;
   confirmationEmailStatus?: ConfirmationEmailStatus;
@@ -126,11 +144,32 @@ export type AvailabilityRoom = {
   nightlyRates?: Array<{ date: string; rate: number }>;
 };
 
-export type PublicAvailabilityRoom = Pick<AvailabilityRoom, "roomId" | "available" | "baseRate" | "nightlyRates">;
+export type PublicAvailabilityRoom = Pick<AvailabilityRoom, "roomId" | "available" | "baseRate" | "nightlyRates"> & {
+  /** Per-room occupancy from the admin-managed room record; null when not yet confirmed. */
+  maxAdults?: number | null;
+  maxChildren?: number | null;
+};
 
 export type AvailabilityResponse = {
   checkIn: string;
   checkOut: string;
   mode: "development" | "production";
   rooms: PublicAvailabilityRoom[];
+};
+
+/** What the mobile lookup returns: enough to answer "what is the state of my booking", no contact details. */
+export type MaskedReservationView = {
+  reference: string;
+  /** Includes `expired` (a payment-pending hold whose time ran out). */
+  status: ReservationStatus | "expired";
+  paymentStatus: PaymentStatus;
+  roomName: string;
+  checkIn: string;
+  checkOut: string;
+  nights: number;
+  guests: { adults: number; children: number; rooms: number };
+  amountDue: number;
+  guestNameMasked: string;
+  phoneLast4: string;
+  holdActive: boolean;
 };

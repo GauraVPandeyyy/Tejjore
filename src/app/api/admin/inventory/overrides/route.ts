@@ -1,15 +1,21 @@
 import { NextResponse } from "next/server";
-import { requireAdminApi } from "@/lib/admin/auth";
+import { recordAudit } from "@/lib/admin/audit";
+import { authorizeAdmin } from "@/lib/admin/authz";
+import { adminErrorResponse } from "@/lib/admin/http";
 import { removeDateOverride, upsertDateOverride } from "@/lib/admin/operations";
+import { revalidateContent } from "@/lib/content/revalidate";
+import { apiError, readJsonBody, rejectNonJson } from "@/lib/http/api";
 import type { RoomId } from "@/types/hotel";
 
 export async function PUT(request: Request) {
-  const session = await requireAdminApi(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  const body = await request.json().catch(() => null) as { id?: string; roomId?: RoomId; date?: string; totalInventory?: number | null; baseRate?: number | null; note?: string } | null;
-  if (!body?.roomId || !body.date) return NextResponse.json({ error: "Room and date are required." }, { status: 400 });
+  const auth = await authorizeAdmin(request, "availability.manage");
+  if (!auth.ok) return auth.response;
+  const nonJson = rejectNonJson(request);
+  if (nonJson) return nonJson;
+  const body = await readJsonBody<{ id?: string; roomId?: RoomId; date?: string; totalInventory?: number | null; baseRate?: number | null; note?: string }>(request);
+  if (!body?.roomId || !body.date) return apiError("INVALID_REQUEST", "Room and date are required.", 400);
   try {
-    const record = await upsertDateOverride({
+    const { record, previous } = await upsertDateOverride({
       id: body.id,
       roomId: body.roomId,
       date: body.date,
@@ -17,21 +23,25 @@ export async function PUT(request: Request) {
       ...(body.baseRate != null ? { baseRate: Number(body.baseRate) } : {}),
       note: body.note,
     });
+    if (record.baseRate != null || previous?.baseRate != null) revalidateContent("rates");
+    await recordAudit(auth.admin, { action: "date_override.saved", entity: "date_override", entityId: record.id, diff: { before: previous, after: record }, request });
     return NextResponse.json(record);
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Date override could not be saved." }, { status: 400 });
+    return adminErrorResponse("inventory/overrides", error, "Date override could not be saved.");
   }
 }
 
 export async function DELETE(request: Request) {
-  const session = await requireAdminApi(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  const auth = await authorizeAdmin(request, "availability.manage");
+  if (!auth.ok) return auth.response;
   const id = new URL(request.url).searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "Override ID is required." }, { status: 400 });
+  if (!id) return apiError("INVALID_REQUEST", "Override ID is required.", 400);
   try {
-    await removeDateOverride(id);
+    const removed = await removeDateOverride(id);
+    if (removed?.baseRate != null) revalidateContent("rates");
+    await recordAudit(auth.admin, { action: "date_override.removed", entity: "date_override", entityId: id, diff: { before: removed }, request });
     return NextResponse.json({ ok: true });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Date override could not be removed." }, { status: 400 });
+    return adminErrorResponse("inventory/overrides", error, "Date override could not be removed.");
   }
 }

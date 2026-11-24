@@ -49,7 +49,7 @@ for (const [label, haystack, needles] of [
   ["secure retrieval", retrieve, ["reference", "email", "phone", "retrieveReservationWithCredentials", "Cache-Control"]],
   ["public availability", availability, ["roomId, available, baseRate, nightlyRates"]],
   ["admin capacity guards", adminOps, ["requiredInventory", "availableRoomsOnDate", "validIsoDate", "paymentReviews"]],
-  ["manage booking", manage, ["Booking email", "Booking phone", "accessToken", "startPayment"]],
+  ["manage booking", manage, ["Booking email", "Registered mobile", "accessToken", "startPayment"]],
   ["booking success", experience, ["Manage booking", "promoCode", "Hold room & continue to payment"]],
   ["concierge current-data guardrails", concierge, ["validateStayDates", "Manage booking", "availability-development", "live-rates"]],
   ["commercial configuration", commerce, ["NEXT_PUBLIC_RATE_PLAN_CONFIG_JSON", "NEXT_PUBLIC_ADDON_CONFIG_JSON", "PROMO_CODES_JSON", "includedAdultsPerRoom"]],
@@ -81,12 +81,17 @@ walk(srcRoot);
 
 for (const file of sourceFiles) {
   const text = fs.readFileSync(file, "utf8");
-  if (/<img\b/i.test(text)) errors.push(`Raw <img> remains in ${path.relative(root, file)}`);
+  // Raw <img> is allowed only for Next.js getImageProps art direction (optimised srcSet/<picture>)
+  // or an explicitly justified admin preview (eslint no-img-element disable just before it).
+  for (const match of text.matchAll(/<img\b/gi)) {
+    const before = text.slice(Math.max(0, match.index - 220), match.index);
+    if (!text.includes("getImageProps") && !before.includes("no-img-element")) errors.push(`Raw <img> remains in ${path.relative(root, file)}`);
+  }
   if (/Coming Soon/i.test(text)) errors.push(`Public/prototype Coming Soon copy remains in ${path.relative(root, file)}`);
 }
 
 const requiredPages = new Set([
-  "/", "/rooms", "/dining", "/experience", "/offers", "/gallery", "/location", "/plan-your-stay", "/virtual-tour", "/book", "/contact", "/policies", "/arrival", "/manage-booking", "/admin", "/admin/login",
+  "/", "/rooms", "/dining", "/experience", "/offers", "/gallery", "/location", "/plan-your-stay", "/virtual-tour", "/book", "/contact", "/faq", "/policies", "/arrival", "/manage-booking", "/admin", "/admin/login",
 ]);
 function routeForPage(file) {
   const relative = path.relative(path.join(root, "src/app"), file).replaceAll(path.sep, "/");
@@ -98,7 +103,7 @@ const pageRoutes = new Set(sourceFiles.filter((file) => file.endsWith(`${path.se
 for (const route of requiredPages) if (!pageRoutes.has(route)) errors.push(`Required application route is missing: ${route}`);
 
 // Check explicit internal hrefs and action hrefs against the application route surface.
-const knownPublicPrefixes = new Set(["/", "/rooms", "/dining", "/experience", "/offers", "/gallery", "/location", "/plan-your-stay", "/virtual-tour", "/book", "/contact", "/policies", "/arrival", "/manage-booking", "/admin", "/admin/login"]);
+const knownPublicPrefixes = new Set(["/", "/rooms", "/dining", "/experience", "/offers", "/gallery", "/location", "/plan-your-stay", "/virtual-tour", "/book", "/contact", "/faq", "/policies", "/arrival", "/manage-booking", "/admin", "/admin/login"]);
 const internalRefs = new Set();
 for (const file of sourceFiles) {
   const text = fs.readFileSync(file, "utf8");
@@ -138,9 +143,12 @@ if (!virtualTourPage.includes('process.env.NODE_ENV !== "production"') || !virtu
 if (!demoLab.includes("Not Tejjora property media")) errors.push("Development panorama provenance disclosure is missing.");
 
 const css = read("src/app/globals.css");
+// Phase 5B moved the redesigned pages (manage booking among them) into the design-system sheet.
+const designCss = read("src/app/tejjora.css");
 if ((css.match(/{/g) || []).length !== (css.match(/}/g) || []).length) errors.push("Global CSS braces are unbalanced.");
 if (!css.includes("@media (prefers-reduced-motion: reduce)")) errors.push("Global reduced-motion treatment is missing.");
-if (!css.includes(".manage-booking")) errors.push("Manage-booking responsive styling is missing.");
+if (!designCss.includes(".tj-manage__card") || !designCss.includes(".tj-manage__form")) errors.push("Manage-booking styling is missing.");
+if ((designCss.match(/{/g) || []).length !== (designCss.match(/}/g) || []).length) errors.push("Design-system CSS braces are unbalanced.");
 
 if (errors.length) {
   console.error("Stage 12 final audit validator: FAILED");

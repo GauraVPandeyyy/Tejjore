@@ -1,4 +1,6 @@
 import "server-only";
+import { collectAllowed, verifyGrounding } from "./grounding";
+import { redactPii } from "./privacy";
 import type { ConciergeReply } from "./provider";
 
 export async function polishConciergeReply(
@@ -6,6 +8,12 @@ export async function polishConciergeReply(
   reply: ConciergeReply,
 ): Promise<ConciergeReply> {
   if (process.env.CONCIERGE_LANGUAGE_PROVIDER !== "gemini") {
+    return reply;
+  }
+
+  // Live prices and availability are never rewritten: the guest's raw text is part of the prompt,
+  // and nothing re-validates the numbers afterwards, so a crafted message could alter a quote.
+  if (reply.dataSource === "live-operations") {
     return reply;
   }
 
@@ -47,7 +55,7 @@ export async function polishConciergeReply(
               role: "user",
               parts: [
                 {
-                  text: `Guest question: ${userMessage}\n\nApproved answer: ${reply.content}`,
+                  text: `Guest question: ${redactPii(userMessage).slice(0, 400)}\n\nApproved answer: ${reply.content}`,
                 },
               ],
             },
@@ -60,6 +68,8 @@ export async function polishConciergeReply(
         }),
 
         cache: "no-store",
+        // A slow model must not hold the guest's reply; on timeout the approved wording is used.
+        signal: AbortSignal.timeout(8000),
       },
     );
 
@@ -82,12 +92,10 @@ export async function polishConciergeReply(
       .join("")
       .trim();
 
-    return text
-      ? {
-          ...reply,
-          content: text,
-        }
-      : reply;
+    // The rewrite must not add a figure, date, time, link or unverified topic the approved answer lacks.
+    if (!text) return reply;
+    const approved = collectAllowed([reply.content, reply.cards ?? []]);
+    return verifyGrounding(text, approved, approved).ok ? { ...reply, content: text } : reply;
   } catch {
     return reply;
   }

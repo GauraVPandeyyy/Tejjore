@@ -54,6 +54,25 @@ export function guestCountError(adults: number, children: number, roomCount: num
   return null;
 }
 
+/** Per-room limits from the admin-managed room record; null = the hotel has not confirmed a limit. */
+export type OccupancyLimits = { maxAdults: number | null; maxChildren: number | null };
+
+/**
+ * Per-room occupancy: the guests must fit in the rooms booked (the cap is the per-room limit times
+ * the number of rooms). Shared by the booking UI, the availability response and the server.
+ */
+export function occupancyError(limits: OccupancyLimits | null | undefined, adults: number, children: number, roomCount: number) {
+  if (!limits) return null;
+  const plural = roomCount === 1 ? "room" : "rooms";
+  if (limits.maxAdults !== null && adults > limits.maxAdults * roomCount) {
+    return `This room category takes up to ${limits.maxAdults} adult${limits.maxAdults === 1 ? "" : "s"} per room (${limits.maxAdults * roomCount} for ${roomCount} ${plural}). Add a room or choose another category.`;
+  }
+  if (limits.maxChildren !== null && children > limits.maxChildren * roomCount) {
+    return `This room category takes up to ${limits.maxChildren} child${limits.maxChildren === 1 ? "" : "ren"} per room (${limits.maxChildren * roomCount} for ${roomCount} ${plural}). Add a room or choose another category.`;
+  }
+  return null;
+}
+
 export function guestPhoneValid(phone: string) {
   const digits = phone.replace(/\D/g, "");
   return digits.length >= 7 && digits.length <= 15;

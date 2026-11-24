@@ -26,6 +26,7 @@ pnpm-debug.log*
 
 # next.js
 /.next/
+/.next-qa/
 /out/
 
 # production
@@ -52,3 +53,9 @@ yarn-error.log*
 next-env.d.ts
 
 # End of https://www.toptal.com/developers/gitignore/api/nextjs
+
+# Development-only admin media uploads (production uses Supabase Storage)
+/public/uploads/
+
+# Copied from node_modules by scripts/copy-maplibre-worker.mjs
+/public/vendor/

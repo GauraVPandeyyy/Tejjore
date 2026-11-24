@@ -178,7 +178,7 @@ export const virtualTourScenes: VirtualTourScene[] = [
     id: "restaurant",
     title: "Restaurant",
     eyebrow: "08 / DINE",
-    description: "Continue through the on-site restaurant before moving toward the lake-facing experience.",
+    description: "The hotel’s own restaurant: breakfast, Indian and Chinese mains, breads and biryani on the menu.",
     panorama: assets.panoramas.restaurant,
     panoramaReady: false,
     mediaKind: "pending",
@@ -187,14 +187,15 @@ export const virtualTourScenes: VirtualTourScene[] = [
     initialView: { yaw: 0, pitch: 0, fov: 1.2 },
     hotspots: [
       { id: "to-lobby-from-restaurant", type: "scene", label: "Lobby", target: "lobby", position: { yaw: -1.2, pitch: -0.03 } },
-      { id: "to-lake", type: "scene", label: "Lake View", target: "lake-view", position: { yaw: 0.75, pitch: -0.02 } },
+      { id: "to-lake", type: "scene", label: "Final scene", target: "lake-view", position: { yaw: 0.75, pitch: -0.02 } },
     ],
   },
   {
     id: "lake-view",
-    title: "Lake View",
-    eyebrow: "09 / THE VIEW",
-    description: "The tour closes at Tejjora's lake-facing side. Final 360 photography is still required for this scene.",
+    title: "Final scene",
+    eyebrow: "09 / NOT YET PHOTOGRAPHED",
+    // Which view the hotel has, and from where, is unconfirmed (content ledger) — no claim until it is.
+    description: "The last stop of the tour is still to be photographed. It opens here once the hotel’s own photography is ready.",
     panorama: assets.panoramas.lakeView,
     panoramaReady: false,
     mediaKind: "pending",
@@ -209,6 +210,16 @@ export const virtualTourScenes: VirtualTourScene[] = [
 
 export const virtualTourSceneIds = virtualTourScenes.map((scene) => scene.id);
 
+/**
+ * The tour opens on Tejjora's own media, never on the third-party development demo:
+ * the first ready property scene if one exists, otherwise the first Tejjora scene preview.
+ * The demo stays reachable from the scene rail, where it is labelled as non-property media.
+ */
+export const defaultVirtualTourScene =
+  virtualTourScenes.find((scene) => scene.mediaKind === "property" && scene.panoramaReady)
+  ?? virtualTourScenes.find((scene) => scene.mediaKind !== "development-demo")
+  ?? virtualTourScenes[0];
+
 export function getVirtualTourScene(sceneId?: string | null) {
-  return virtualTourScenes.find((scene) => scene.id === sceneId) ?? virtualTourScenes[0];
+  return virtualTourScenes.find((scene) => scene.id === sceneId) ?? defaultVirtualTourScene;
 }

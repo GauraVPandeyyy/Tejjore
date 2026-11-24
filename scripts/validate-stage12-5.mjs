@@ -48,7 +48,13 @@ const viewer = read("src/components/virtual-tour/MarzipanoViewer.tsx");
 for (const needle of ["immersiveEligible: true", "propertyMedia: false", "flat-preview", "immersiveEligible: false"]) {
   if (!manifest.includes(needle)) errors.push(`Panorama manifest missing ${needle}`);
 }
-if ((tour.match(/panoramaReady: true/g) || []).length > 0) errors.push("A Tejjora production scene was prematurely marked panoramaReady");
+// Only Tejjora property scenes are guarded: the explicitly labelled development-demo scene is
+// allowed to be immersive (it is disclosed as non-property media in the viewer).
+const sceneBlocks = tour.split(/\n\s*\{\s*\n\s*id: "/).slice(1);
+if (sceneBlocks.some((block) => block.includes("panoramaReady: true") && !block.includes('mediaKind: "development-demo"'))) {
+  errors.push("A Tejjora production scene was prematurely marked panoramaReady");
+}
+if (!tour.includes("defaultVirtualTourScene")) errors.push("Tour default scene may open on non-Tejjora demo media");
 if (!tour.includes('mediaKind: "pending"')) errors.push("Tejjora scenes do not carry pending media provenance");
 if (!page.includes('process.env.NODE_ENV !== "production"') || !page.includes('demoValue === "1"')) errors.push("Development demo is not production-gated");
 if (!demo.includes("Tejjora Lake View property photography")) errors.push("Demo UI lacks explicit non-property disclosure");

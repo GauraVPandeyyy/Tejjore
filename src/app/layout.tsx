@@ -1,13 +1,28 @@
 import type { Metadata, Viewport } from "next";
-import { Instrument_Serif, Manrope } from "next/font/google";
+import { Cinzel, Cormorant_Garamond, Manrope } from "next/font/google";
 import { SiteShell } from "@/components/layout/SiteShell";
+import { siteUrl } from "@/lib/site";
 import "./globals.css";
-import "./redesign.css";
-const instrumentSerif = Instrument_Serif({
+import "./tejjora.css";
+import "./tejjora-experience.css";
+import "./tejjora-concierge.css";
+import "./tejjora-stay.css";
+import "./tejjora-motion.css";
+import "./tejjora-rooms-dining.css";
+import "./tejjora-dining.css";
+import "./tejjora-home.css";
+import "./tejjora-gallery.css";
+import "./tejjora-location.css";
+import "./tejjora-plan.css";
+import "./tejjora-book.css";
+
+// Phase 4 type system: Cormorant Garamond 300/400 for display, Manrope for body and UI,
+// Cinzel only for small eyebrows (masterplan §2.2).
+const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: "400",
+  weight: ["300", "400"],
   style: ["normal", "italic"],
-  variable: "--font-instrument-serif",
+  variable: "--font-cormorant",
   display: "swap",
 });
 
@@ -17,16 +32,22 @@ const manrope = Manrope({
   display: "swap",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
+const cinzel = Cinzel({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-cinzel",
+  display: "swap",
+  preload: false,
+});
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(siteUrl()),
   title: {
     default: "Tejjora Lake View | Gomti Nagar, Lucknow",
     template: "%s | Tejjora Lake View",
   },
   description:
-    "Tejjora Lake View — a contemporary boutique stay in Gomti Nagar, Lucknow with rooms, dining, direct booking and a lake-led terrace experience.",
+    "Tejjora Lake View — a contemporary boutique hotel in Gomti Nagar, Lucknow, with rooms, a restaurant and direct booking.",
   openGraph: {
     type: "website",
     siteName: "Tejjora Lake View",
@@ -54,18 +75,20 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#002E36",
+  viewportFit: "cover",
+  themeColor: "#022D36",
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="en"
-      className={`${instrumentSerif.variable} ${manrope.variable}`}
-    >
+    <html lang="en" className={`${cormorant.variable} ${manrope.variable} ${cinzel.variable}`}>
       <body>
+        {/* Without JavaScript, reveal-on-scroll content must never stay hidden. */}
+        <noscript>
+          <style>{"[data-reveal]{opacity:1!important;transform:none!important}"}</style>
+        </noscript>
         <SiteShell>{children}</SiteShell>
       </body>
     </html>

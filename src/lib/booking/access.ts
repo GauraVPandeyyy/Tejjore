@@ -1,5 +1,6 @@
 import "server-only";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { normalizePhoneE164 } from "@/lib/phone";
 import type { ReservationRecord } from "@/types/booking";
 
 export function createReservationAccessToken() {
@@ -40,11 +41,18 @@ export function normalizeGuestPhone(value: string) {
   return value.replace(/\D/g, "");
 }
 
+/** Equal as E.164 (so +91 / 0 prefixes and spacing do not matter); falls back to the digits when a number cannot be normalised. */
+function samePhoneNumber(stored: string, supplied: string) {
+  const a = normalizePhoneE164(stored);
+  const b = normalizePhoneE164(supplied);
+  return a && b ? safeEqual(a, b) : normalizeGuestPhone(stored) === normalizeGuestPhone(supplied);
+}
+
 export function guestCredentialsMatch(
   reservation: ReservationRecord,
   email: string,
   phone: string,
 ) {
   return normalizeGuestEmail(reservation.guest.email) === normalizeGuestEmail(email)
-    && normalizeGuestPhone(reservation.guest.phone) === normalizeGuestPhone(phone);
+    && samePhoneNumber(reservation.guest.phone, phone);
 }

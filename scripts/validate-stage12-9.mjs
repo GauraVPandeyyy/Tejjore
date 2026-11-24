@@ -21,13 +21,13 @@ const data = await readFile(path.join(root, "src/data/concierge.ts"), "utf8");
 
 for (const marker of [
   "searchAvailability",
-  "effectiveRoomRate",
-  "readBookingStore",
+  "ratesCard",
+  "stayRoomSubtotal",
   "availability-development",
   "live-rates",
   "room-comparison",
   "booking-status-privacy",
-  "extractStayDates",
+  "stayFromMessage",
 ]) {
   if (!hybrid.includes(marker)) throw new Error(`Missing Stage 12.9 concierge marker: ${marker}`);
 }

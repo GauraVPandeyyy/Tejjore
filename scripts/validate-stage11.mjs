@@ -49,9 +49,11 @@ for (const requirement of ["TourSceneRail", "Check this room", "Full screen", "S
 
 if (!page.includes("virtualTourSceneIds.includes")) throw new Error("Virtual tour deep-link validation is missing.");
 
-// All panoramas are currently pending. The code must not claim that missing files are ready.
+// Every Tejjora panorama is still pending. Since Stage 12.5 the only scene allowed to be ready is the
+// labelled development-demo reference (same rule as validate-stage12-final); no property scene may claim it.
 const readyTrue = (data.match(/panoramaReady:\s*true/g) ?? []).length;
-if (readyTrue !== 0) throw new Error("A panorama was marked ready without a supplied verified 360 asset.");
+const demoReady = /id: "demo-room"[\s\S]{0,800}?panoramaReady: true,\s*mediaKind: "development-demo"/.test(data);
+if (readyTrue !== 1 || !demoReady) throw new Error("A panorama was marked ready without a supplied verified 360 asset.");
 
 let depth = 0;
 for (const char of css) {

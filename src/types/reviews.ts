@@ -11,11 +11,14 @@ export type HotelReview = {
   relativeTime?: string;
   publishTime?: string;
   googleMapsUri?: string;
+  /** Where the review was originally published (testimonials), e.g. "Google". */
+  sourceLabel?: string;
   author: ReviewAuthor;
 };
 
 export type ReviewFeed = {
-  source: "google-live" | "snapshot" | "demo";
+  /** "testimonials" = genuine, consented, published reviews curated in the database. */
+  source: "google-live" | "testimonials" | "snapshot" | "demo";
   rating: number;
   reviewCount: number;
   googleMapsUri?: string;

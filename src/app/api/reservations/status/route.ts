@@ -1,8 +1,10 @@
+import { isBookingReference } from "@/lib/booking/reference";
 import { NextResponse } from "next/server";
 import { reservationAccessMatches } from "@/lib/booking/access";
 import { toPublicReservationView } from "@/lib/booking/public";
 import { getReservation } from "@/lib/booking/reservations";
-import { rateLimit } from "@/lib/security/rateLimit";
+import { enforceRateLimit } from "@/lib/security/rateLimit";
+import { apiError, guardJsonMutation, internalError, readJsonBody } from "@/lib/http/api";
 
 /**
  * Current state of a reservation for the browser that created or retrieved it. Used to
@@ -10,28 +12,24 @@ import { rateLimit } from "@/lib/security/rateLimit";
  * client state. Requires the reservation's access token, like the payment endpoints.
  */
 export async function POST(request: Request) {
-  const limited = rateLimit(request, "reservation-status", { limit: 60, windowMs: 15 * 60_000 });
-  if (!limited.allowed) {
-    return NextResponse.json(
-      { error: "Too many status checks. Please wait a moment and try again." },
-      { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds), "Cache-Control": "no-store" } },
-    );
-  }
+  const guarded = guardJsonMutation(request);
+  if (guarded) return guarded;
+  const limited = await enforceRateLimit(request, "reservation-status", { limit: 60, windowMs: 15 * 60_000 }, "Too many status checks. Please wait a moment and try again.");
+  if (limited) return limited;
 
-  const body = await request.json().catch(() => null) as { reference?: string; accessToken?: string } | null;
+  const body = await readJsonBody<{ reference?: string; accessToken?: string }>(request);
   const reference = body?.reference?.trim().toUpperCase() ?? "";
-  if (!/^TLV-\d{6}-[A-Z0-9]{6}$/.test(reference) || !body?.accessToken) {
-    return NextResponse.json({ error: "Verified booking access is required." }, { status: 400, headers: { "Cache-Control": "no-store" } });
+  if (!isBookingReference(reference) || !body?.accessToken) {
+    return apiError("ACCESS_REQUIRED", "Verified booking access is required.", 400);
   }
 
   try {
     const reservation = await getReservation(reference);
     if (!reservation || !reservationAccessMatches(reservation, body.accessToken)) {
-      return NextResponse.json({ error: "Reservation access could not be verified." }, { status: 403, headers: { "Cache-Control": "no-store" } });
+      return apiError("ACCESS_DENIED", "Reservation access could not be verified.", 403);
     }
     return NextResponse.json(toPublicReservationView(reservation, body.accessToken), { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
-    console.error("Reservation status could not be read", error);
-    return NextResponse.json({ error: "The reservation could not be loaded right now." }, { status: 503, headers: { "Cache-Control": "no-store" } });
+    return internalError("reservations/status", error, "The reservation could not be loaded right now.", { reference });
   }
 }

@@ -32,7 +32,7 @@ function futureYearFor(monthIndex: number, day: number, now: Date) {
   return candidate < today ? currentYear + 1 : currentYear;
 }
 
-export function extractStayDates(input: string, now = new Date()): { checkIn: string; checkOut: string } | null {
+function findDates(input: string, now: Date): string[] {
   const text = input.trim();
   const found: Date[] = [];
 
@@ -62,10 +62,35 @@ export function extractStayDates(input: string, now = new Date()): { checkIn: st
     }
   }
 
-  const unique = [...new Map(found.map((date) => [iso(date), date])).values()]
-    .sort((a, b) => a.getTime() - b.getTime());
+  return [...new Map(found.map((date) => [iso(date), date])).values()]
+    .sort((a, b) => a.getTime() - b.getTime())
+    .map(iso);
+}
+
+export type StayDates = { checkIn: string; checkOut: string };
+
+export function extractStayDates(input: string, now = new Date()): StayDates | null {
+  const unique = findDates(input, now);
   if (unique.length < 2) return null;
-  const checkIn = iso(unique[0]);
-  const checkOut = iso(unique[1]);
+  const [checkIn, checkOut] = unique;
   return checkOut > checkIn ? { checkIn, checkOut } : null;
+}
+
+/** "3 nights" / "for 2 night": a stay length the guest stated (1–30). */
+export function extractNights(input: string): number | null {
+  const match = /\b(\d{1,2})\s*[- ]?\s*nights?\b/i.exec(input);
+  const nights = match ? Number(match[1]) : 0;
+  return nights >= 1 && nights <= 30 ? nights : null;
+}
+
+/** A single stated date ("from 10 Oct"), used with a stated number of nights or an earlier check-in. */
+export function extractSingleDate(input: string, now = new Date()): string | null {
+  const dates = findDates(input, now);
+  return dates.length === 1 ? dates[0] : null;
+}
+
+export function addNights(date: string, nights: number): string {
+  const value = new Date(`${date}T12:00:00Z`);
+  value.setUTCDate(value.getUTCDate() + nights);
+  return iso(value);
 }

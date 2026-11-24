@@ -1,29 +1,37 @@
 import { NextResponse } from "next/server";
-import { requireAdminApi } from "@/lib/admin/auth";
+import { recordAudit } from "@/lib/admin/audit";
+import { authorizeAdmin } from "@/lib/admin/authz";
+import { adminErrorResponse } from "@/lib/admin/http";
 import { createInventoryBlock, removeInventoryBlock } from "@/lib/admin/operations";
+import { apiError, readJsonBody, rejectNonJson } from "@/lib/http/api";
 import type { RoomId } from "@/types/hotel";
 
 export async function POST(request: Request) {
-  const session = await requireAdminApi(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  const body = await request.json().catch(() => null) as { roomId?: RoomId; date?: string; quantity?: number; reason?: string } | null;
-  if (!body?.roomId || !body.date || body.quantity == null) return NextResponse.json({ error: "Room, date and quantity are required." }, { status: 400 });
+  const auth = await authorizeAdmin(request, "availability.manage");
+  if (!auth.ok) return auth.response;
+  const nonJson = rejectNonJson(request);
+  if (nonJson) return nonJson;
+  const body = await readJsonBody<{ roomId?: RoomId; date?: string; quantity?: number; reason?: string }>(request);
+  if (!body?.roomId || !body.date || body.quantity == null) return apiError("INVALID_REQUEST", "Room, date and quantity are required.", 400);
   try {
-    return NextResponse.json(await createInventoryBlock({ roomId: body.roomId, date: body.date, quantity: Number(body.quantity), reason: body.reason }), { status: 201 });
+    const block = await createInventoryBlock({ roomId: body.roomId, date: body.date, quantity: Number(body.quantity), reason: body.reason });
+    await recordAudit(auth.admin, { action: "inventory_block.created", entity: "inventory_block", entityId: block.id, diff: { after: block }, request });
+    return NextResponse.json(block, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Inventory block could not be created." }, { status: 400 });
+    return adminErrorResponse("inventory/blocks", error, "Inventory block could not be created.");
   }
 }
 
 export async function DELETE(request: Request) {
-  const session = await requireAdminApi(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  const auth = await authorizeAdmin(request, "availability.manage");
+  if (!auth.ok) return auth.response;
   const id = new URL(request.url).searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "Block ID is required." }, { status: 400 });
+  if (!id) return apiError("INVALID_REQUEST", "Block ID is required.", 400);
   try {
-    await removeInventoryBlock(id);
+    const removed = await removeInventoryBlock(id);
+    await recordAudit(auth.admin, { action: "inventory_block.removed", entity: "inventory_block", entityId: id, diff: { before: removed }, request });
     return NextResponse.json({ ok: true });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Inventory block could not be removed." }, { status: 400 });
+    return adminErrorResponse("inventory/blocks", error, "Inventory block could not be removed.");
   }
 }

@@ -1,0 +1,381 @@
+/* ==========================================================================
+   Booking — progress, room choice, quote, errors, next steps, mobile bar,
+   confirmation. Overrides the base .tj-book rules (loaded after them).
+   ========================================================================== */
+
+/* ------------------------------------------------------------- progress */
+.tj-book .tj-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: min(100%, 36rem);
+}
+.tj-book .tj-steps__item {
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  text-align: center;
+}
+.tj-book .tj-steps__item::before {
+  content: "";
+  width: 100%;
+  height: 4px;
+  border: 0;
+  border-radius: 99px;
+  background: var(--tj-line);
+  transition: background-color 500ms var(--tj-ease);
+}
+.tj-book .tj-steps__item[data-state="done"]::before {
+  background: var(--tj-lake);
+}
+.tj-book .tj-steps__item[data-state="active"]::before {
+  background: var(--tj-ember);
+}
+.tj-book .tj-steps__item[data-state="active"] {
+  color: var(--tj-lake);
+}
+
+/* animated step content */
+.tj-book__step {
+  animation: bk-in 420ms var(--tj-ease) both;
+}
+@keyframes bk-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ----------------------------------------------------------------- bar */
+.bk-bar {
+  position: sticky;
+  top: var(--tj-header-h);
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 calc(-1 * var(--tj-gutter)) 1rem;
+  padding: 0.6rem var(--tj-gutter);
+  border-bottom: 1px solid var(--tj-line);
+  background: rgba(248, 245, 237, 0.95);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: var(--tj-ink);
+  text-decoration: none;
+}
+.bk-bar__what {
+  display: grid;
+  min-width: 0;
+}
+.bk-bar__what strong {
+  overflow: hidden;
+  font-family: var(--tj-display);
+  font-size: 1.1875rem;
+  font-weight: 500;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bk-bar__what small {
+  color: var(--tj-ink-soft);
+}
+.bk-bar__total {
+  font-family: var(--tj-display);
+  font-size: 1.625rem;
+  line-height: 1;
+}
+@media (min-width: 1024px) {
+  .bk-bar {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------ room choice */
+.bk-rooms {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tj-book-room.bk-room {
+  display: grid;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(2, 45, 54, 0.1);
+  transition:
+    transform 260ms var(--tj-ease),
+    border-color 260ms var(--tj-ease),
+    box-shadow 260ms var(--tj-ease);
+}
+.tj-book-room.bk-room:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 46px rgba(2, 45, 54, 0.15);
+}
+.tj-book-room.bk-room[aria-pressed="true"] {
+  border-color: var(--tj-lake);
+  box-shadow: 0 0 0 3px rgba(2, 45, 54, 0.12), 0 20px 46px rgba(2, 45, 54, 0.15);
+}
+.tj-book-room.bk-room:disabled {
+  opacity: 0.6;
+}
+.bk-room__photo {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  background: var(--tj-paper-2);
+}
+.bk-room__photo img {
+  object-fit: cover;
+}
+.bk-room__flag {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  background: var(--tj-ember);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.bk-room__body {
+  display: grid;
+  align-content: start;
+  gap: 0.6rem;
+  padding: 1rem 1.15rem 1.2rem;
+}
+.bk-room__title {
+  font-family: var(--tj-display);
+  font-size: 1.875rem;
+  font-weight: 400;
+  line-height: 1.05;
+}
+.bk-room__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.bk-room__chips span {
+  padding: 0.18rem 0.6rem;
+  border: 1px solid var(--tj-line);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: var(--tj-ink-soft);
+}
+.bk-room__price {
+  display: grid;
+  gap: 0.1rem;
+}
+.bk-room__price strong {
+  font-family: var(--tj-display);
+  font-size: 2.125rem;
+  font-weight: 500;
+  line-height: 1;
+}
+.bk-room__price small {
+  color: var(--tj-ink-soft);
+}
+.bk-skeleton {
+  display: block;
+  width: 55%;
+  height: 2rem;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--tj-paper-2) 25%, #fff 50%, var(--tj-paper-2) 75%);
+  background-size: 200% 100%;
+  animation: bk-shimmer 1.2s linear infinite;
+}
+@keyframes bk-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+.bk-room__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 700;
+  color: var(--tj-lake);
+}
+.bk-room__state[data-tone="off"] {
+  color: #8a2b14;
+}
+@media (min-width: 640px) {
+  .tj-book-room.bk-room {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  }
+  .bk-room__photo {
+    aspect-ratio: auto;
+    min-height: 220px;
+  }
+}
+
+/* ---------------------------------------------------------------- errors */
+.bk-error {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid #c8553a;
+  border-left-width: 4px;
+  border-radius: 14px;
+  background: #fbeee9;
+  color: #5a1b0d;
+}
+.bk-error p {
+  margin: 0;
+  line-height: 1.5;
+}
+.bk-error__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* ---------------------------------------------------------------- quote */
+.bk-quote {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--tj-line);
+  border-radius: 18px;
+  background: #fff;
+}
+.bk-quote dl {
+  display: grid;
+  margin: 0;
+}
+.bk-quote dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed var(--tj-line);
+}
+.bk-quote dt {
+  color: var(--tj-ink-soft);
+}
+.bk-quote dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.bk-quote__discount dd {
+  color: #1d6b3a;
+}
+.bk-quote dl > .bk-quote__total {
+  align-items: baseline;
+  padding-top: 0.8rem;
+  border-bottom: 0;
+}
+.bk-quote__total dt {
+  font-weight: 700;
+  color: var(--tj-ink);
+}
+.bk-quote__total dd {
+  font-family: var(--tj-display);
+  font-size: 2rem;
+  line-height: 1;
+}
+.bk-quote__nights summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+.bk-quote__nights ul {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+}
+.bk-quote__nights li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--tj-ink-soft);
+}
+.bk-quote__note {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--tj-ink-soft);
+}
+
+/* ------------------------------------------------------------ next steps */
+.bk-next {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bk-next li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.bk-next__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--tj-line);
+  border-radius: 50%;
+  background: var(--tj-paper-2);
+  color: var(--tj-lake);
+}
+.bk-next strong {
+  display: block;
+  font-size: 0.9375rem;
+}
+.bk-next small {
+  display: block;
+  color: var(--tj-ink-soft);
+  line-height: 1.4;
+}
+@media (min-width: 768px) {
+  .bk-next {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+/* ----------------------------------------------------------- phone layout */
+@media (max-width: 1023px) {
+  /* Room for the bottom dock under the last action. */
+  .tj-book {
+    padding-bottom: calc(var(--tj-dock-h) + 2.5rem);
+  }
+  .tj-book__nav {
+    position: sticky;
+    bottom: calc(var(--tj-dock-h) + 10px + env(safe-area-inset-bottom));
+    z-index: 5;
+    padding: 0.5rem;
+    border: 1px solid var(--tj-line);
+    border-radius: 999px;
+    background: rgba(248, 245, 237, 0.95);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(2, 45, 54, 0.14);
+  }
+  .tj-book__nav > :last-child {
+    margin-left: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tj-book__step,
+  .bk-skeleton {
+    animation: none;
+  }
+}

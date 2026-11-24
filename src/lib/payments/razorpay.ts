@@ -5,12 +5,27 @@ import type { PaymentOrder, PaymentProvider, PaymentVerificationInput } from "./
 
 export type PaymentMode = "razorpay" | "test" | "unavailable";
 
+export function webhookSecretConfigured() {
+  return Boolean(process.env.RAZORPAY_WEBHOOK_SECRET?.trim());
+}
+
+let lastWebhookGateLog = 0;
+
 export function paymentMode(): PaymentMode {
   if (process.env.NODE_ENV === "production") {
     const productionReady = process.env.BOOKING_PRODUCTION_READY === "true";
     const productionMode = process.env.BOOKING_MODE === "production";
     const persistentStoreConfigured = Boolean(process.env.DATABASE_URL?.trim());
     if (!productionReady || !productionMode || !persistentStoreConfigured) return "unavailable";
+    // Without the webhook secret, payments could only ever be confirmed by the guest's browser,
+    // and closed tabs or failed callbacks would leave paid bookings unreconciled. Fail closed.
+    if (!webhookSecretConfigured()) {
+      if (Date.now() - lastWebhookGateLog > 60_000) {
+        lastWebhookGateLog = Date.now();
+        console.error("[payments] RAZORPAY_WEBHOOK_SECRET is not configured; online payment is disabled in production.");
+      }
+      return "unavailable";
+    }
   }
   if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) return "razorpay";
   if (process.env.PAYMENT_TEST_MODE === "true" && process.env.NODE_ENV !== "production") return "test";
@@ -67,7 +82,7 @@ export function verifyRazorpaySignature(orderId: string, paymentId: string, sign
 }
 
 export function verifyWebhookSignature(rawBody: string, signature: string) {
-  const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET?.trim();
   if (!secret) return false;
   const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
   const a = Buffer.from(expected, "utf8");

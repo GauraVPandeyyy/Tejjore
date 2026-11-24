@@ -1,0 +1,166 @@
+/* ==========================================================================
+   Tejjora motion layer — route transition, MorphText, MaskedHeading and ScrollReveal
+   compositions. Loaded after the page stylesheets; additive only.
+   ========================================================================== */
+
+/* ------------------------------------------------------- route transition */
+.tj-route {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  overflow: hidden;
+  pointer-events: none;
+  visibility: hidden;
+}
+.tj-route[data-active] {
+  visibility: visible;
+}
+.tj-route__sheet {
+  position: absolute;
+  inset: 0;
+  transform: translateY(104%);
+  will-change: transform;
+}
+.tj-route__sheet--back {
+  background: var(--tj-lake-800);
+}
+.tj-route__sheet--front {
+  display: grid;
+  place-items: center;
+  background: var(--tj-lake);
+  color: var(--tj-cream);
+}
+.tj-route__edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  width: 100%;
+  height: clamp(36px, 7vw, 80px);
+  margin-bottom: -1px;
+  fill: currentColor;
+}
+.tj-route__sheet--back .tj-route__edge {
+  color: var(--tj-lake-800);
+}
+.tj-route__sheet--front .tj-route__edge {
+  color: var(--tj-lake);
+}
+.tj-route__word {
+  font-family: var(--tj-display);
+  font-size: clamp(2.25rem, 6vw, 4rem);
+  font-weight: 300;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tj-route {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------ MorphText */
+.tj-morph {
+  display: inline;
+}
+.tj-morph__stage {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+  vertical-align: baseline;
+}
+.tj-morph__letter {
+  display: inline-block;
+  will-change: transform;
+}
+.tj-morph__ghost {
+  position: absolute;
+  display: inline-block;
+  pointer-events: none;
+  white-space: pre;
+}
+
+/* ------------------------------------------- manifesto (ScrollReveal text) */
+.tj-manifesto {
+  position: relative;
+  padding-block: var(--section-y-xl);
+  background: var(--tj-paper);
+  color: var(--tj-lake);
+}
+.tj-manifesto--lake {
+  background: var(--tj-lake);
+  color: var(--tj-cream);
+}
+.tj-manifesto__inner {
+  display: grid;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  max-width: 62rem;
+}
+.tj-manifesto__text .scroll-reveal-text {
+  font-family: var(--tj-display);
+  font-size: clamp(1.9rem, 4.6vw, 3.6rem);
+  font-weight: 300;
+  line-height: 1.2;
+  letter-spacing: 0.005em;
+}
+.tj-manifesto__text .scroll-reveal-text em {
+  font-style: italic;
+}
+.tj-manifesto__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
+}
+
+/* ----------------------------------------------- masked statement heading */
+.tj-masked {
+  position: relative;
+  padding-block: var(--section-y-lg);
+  background: var(--tj-paper);
+  color: var(--tj-lake);
+  overflow: hidden;
+}
+.tj-masked--lake {
+  background: var(--tj-lake);
+  color: var(--tj-cream);
+}
+.tj-masked__inner {
+  display: grid;
+  gap: clamp(1rem, 2.4vw, 1.75rem);
+  justify-items: center;
+  text-align: center;
+}
+.tj-masked__title {
+  width: min(100%, 78rem);
+  font-family: var(--font-manrope), "Manrope", system-ui, sans-serif;
+  text-transform: uppercase;
+}
+.tj-masked__caption {
+  max-width: 34rem;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  opacity: 0.82;
+}
+
+/* Masked heading used as a page hero title (Gallery, Virtual tour). */
+.tj-masked-hero {
+  width: min(100%, 64rem);
+  margin: 0;
+  font-family: var(--font-manrope), "Manrope", system-ui, sans-serif;
+  text-transform: uppercase;
+  color: var(--tj-cream);
+}
+
+/* BlurText inside a heading: keep the heading's own alignment. */
+.tj-blur-center {
+  justify-content: center;
+}
+
+/* Eyebrow on the lake manifesto: the default accent is too low-contrast on deep teal. */
+.tj-manifesto--lake .tj-eyebrow {
+  color: var(--tj-sand);
+}
