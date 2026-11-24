@@ -169,9 +169,9 @@ describe("admin hardening", () => {
 });
 
 describe("configuration fail-safes", () => {
-  test("database TLS: unverified connections are refused in production", () => {
+  test("database TLS: production always verifies the certificate (system CA by default)", () => {
     const env = { DATABASE_URL: "postgresql://u:p@db.example:5432/app?sslmode=require", DATABASE_SSL: "true" };
-    assert.throws(() => databaseConnectionConfig(env, "production"), /DATABASE_SSL_CA/);
+    assert.equal(databaseConnectionConfig(env, "production").ssl?.rejectUnauthorized, true);
     const dev = databaseConnectionConfig(env, "development");
     assert.equal(dev.ssl?.rejectUnauthorized, false);
     assert.ok(dev.warning);
@@ -213,7 +213,6 @@ describe("configuration fail-safes", () => {
     const problems = productionConfigProblems({ BOOKING_PRODUCTION_READY: "true", RAZORPAY_KEY_ID: "k", ADMIN_PASSWORD: "secret-value", DATABASE_SSL: "true" });
     assert.ok(problems.some((problem) => problem.includes("RAZORPAY_WEBHOOK_SECRET")));
     assert.ok(problems.some((problem) => problem.includes("ADMIN_USERS_JSON")));
-    assert.ok(problems.some((problem) => problem.includes("DATABASE_SSL_CA")));
     assert.equal(problems.join(" ").includes("secret-value"), false);
   });
 });

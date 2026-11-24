@@ -6,15 +6,12 @@ export const ADMIN_HASH_SHAPE = /^scrypt\$[0-9a-f]{32}\$[0-9a-f]{128}$/i;
 /** Production configuration problems, described by variable name only (never values). */
 export function productionConfigProblems(env: Env = process.env): string[] {
   const problems: string[] = [];
-  const paymentsWanted = env.BOOKING_PRODUCTION_READY === "true" && Boolean(env.RAZORPAY_KEY_ID?.trim());
+  const paymentsWanted = env.BOOKING_PRODUCTION_READY !== "false" && Boolean(env.RAZORPAY_KEY_ID?.trim());
   if (paymentsWanted && !env.RAZORPAY_WEBHOOK_SECRET?.trim()) {
     problems.push("RAZORPAY_WEBHOOK_SECRET is not set: online payment stays disabled and webhooks are rejected until it is configured.");
   }
   if (env.ADMIN_PASSWORD && !env.ADMIN_USERS_JSON?.trim()) {
     problems.push("Only plain-text ADMIN_PASSWORD is configured: it is ignored in production. Set ADMIN_USERS_JSON (scripts/generate-admin-hash.mjs).");
-  }
-  if (env.DATABASE_SSL === "true" && !env.DATABASE_SSL_CA?.trim() && !env.DATABASE_SSL_CA_BASE64?.trim() && env.DATABASE_SSL_USE_SYSTEM_CA !== "true") {
-    problems.push("DATABASE_SSL=true without DATABASE_SSL_CA / DATABASE_SSL_CA_BASE64 / DATABASE_SSL_USE_SYSTEM_CA: database connections are refused.");
   }
   if (!env.ADMIN_SESSION_SECRET || env.ADMIN_SESSION_SECRET.length < 32) {
     problems.push("ADMIN_SESSION_SECRET is missing or shorter than 32 characters: staff sign-in is unavailable.");

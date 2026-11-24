@@ -220,7 +220,7 @@ describe("content getters against a seeded database", () => {
     const { data } = await getRooms(options());
     assert.deepEqual(data.map((room) => room.id), ["deluxe", "super-deluxe", "premium"]);
     for (const room of data) assert.equal(room.startingPrice, commerceConfig.roomRates[room.id]);
-    assert.ok(data.every((room) => room.sizeSqFt === null && room.bedType === null && room.maxGuests === null && room.view === null));
+    assert.ok(data.every((room) => room.sizeSqFt === null && room.bedType === null && room.maxGuests === 2 && room.view === null));
   });
 
   test("property facts: only verified + public are returned", async () => {

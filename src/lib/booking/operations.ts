@@ -12,7 +12,7 @@ function environmentInventory(roomId: RoomId) {
   const raw = process.env[envKey];
   const parsed = raw ? Number(raw) : NaN;
   if (Number.isInteger(parsed) && parsed >= 0) return parsed;
-  if (process.env.BOOKING_MODE === "production") return 0;
+  // Not set: use the assumed room counts (commerceConfig.developmentInventory) instead of closing sales.
   return commerceConfig.developmentInventory[roomId];
 }
 

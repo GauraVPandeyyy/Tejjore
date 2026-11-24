@@ -1,5 +1,6 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { bookingMode } from "@/lib/booking/mode";
 import type { ReservationRecord } from "@/types/booking";
 import type { PaymentOrder, PaymentProvider, PaymentVerificationInput } from "./provider";
 
@@ -13,8 +14,8 @@ let lastWebhookGateLog = 0;
 
 export function paymentMode(): PaymentMode {
   if (process.env.NODE_ENV === "production") {
-    const productionReady = process.env.BOOKING_PRODUCTION_READY === "true";
-    const productionMode = process.env.BOOKING_MODE === "production";
+    const productionReady = process.env.BOOKING_PRODUCTION_READY !== "false";
+    const productionMode = bookingMode() === "production";
     const persistentStoreConfigured = Boolean(process.env.DATABASE_URL?.trim());
     if (!productionReady || !productionMode || !persistentStoreConfigured) return "unavailable";
     // Without the webhook secret, payments could only ever be confirmed by the guest's browser,

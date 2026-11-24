@@ -80,10 +80,13 @@ function assertSiteUrl() {
 }
 
 export default function config(phase: string): NextConfig {
+  // The public origin is a known constant of this deployment; an env var still overrides it.
+  if (!process.env.NEXT_PUBLIC_SITE_URL?.trim() && phase !== PHASE_DEVELOPMENT_SERVER) process.env.NEXT_PUBLIC_SITE_URL = "https://tejjoralakeview.in";
   if (phase === PHASE_PRODUCTION_BUILD || phase === PHASE_PRODUCTION_SERVER) assertSiteUrl();
   const isDev = phase === PHASE_DEVELOPMENT_SERVER;
 
   return {
+    env: process.env.NEXT_PUBLIC_SITE_URL ? { NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL } : {},
     // QA only: lets an isolated server (scripts/qa/isolated-env.mjs) run beside a developer's own
     // `next dev`, which holds the .next/dev lock. Unset everywhere else, so the default stays .next.
     ...(process.env.NEXT_QA_DIST_DIR === ".next-qa" ? { distDir: ".next-qa" } : {}),

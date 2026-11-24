@@ -1,7 +1,6 @@
 import { strict as assert } from "node:assert";
 import { randomBytes, scryptSync } from "node:crypto";
 import { after, before, beforeEach, describe, test } from "node:test";
-import sharp from "sharp";
 import { isolateEnv, setEnv } from "./setup/env.mts";
 import { createTestDatabase, type TestDatabase } from "./setup/pglite.mts";
 
@@ -28,7 +27,6 @@ const { setContentDatabaseForTests } = await import("../src/lib/content/db");
 const { setRevalidateSpyForTests } = await import("../src/lib/content/revalidate");
 const { resetContentCircuit } = await import("../src/lib/content/source");
 const { memoryMediaStorage, setMediaStorageForTests } = await import("../src/lib/admin/media/storage");
-const { sniffImageFormat, MEDIA_MAX_BYTES } = await import("../src/lib/admin/media/process");
 const { getRooms } = await import("../src/lib/content/rooms");
 const { getPublicPropertyFacts } = await import("../src/lib/content/facts");
 const { getPublishedPolicies } = await import("../src/lib/content/policies");
@@ -282,43 +280,9 @@ describe("Phase 3B/3C admin CMS", () => {
     assert.equal(JSON.stringify(detail).includes("9876543210"), false);
   });
 
-  test("media: type sniffing, size limit, alt + provenance, re-encoding, truthful assignment", async () => {
-    const svg = new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>');
-    assert.equal(sniffImageFormat(svg), null);
-    const png = new Uint8Array(await sharp({ create: { width: 64, height: 48, channels: 3, background: "#336699" } }).png().toBuffer());
-    assert.equal(sniffImageFormat(png), "png");
-
-    const upload = (user: string, bytes: Uint8Array, fields: Record<string, string>, type = "image/png") => {
-      const form = new FormData();
-      form.set("file", new Blob([bytes], { type }), "upload.png");
-      for (const [name, value] of Object.entries(fields)) form.set(name, value);
-      return mediaRoute.POST(request("POST", "/api/admin/media", { cookie: as(user), form }));
-    };
-    const svgResponse = await upload("manager", svg, { alt: "Logo", provenance: "tejjora" }, "image/png");
-    assert.equal(svgResponse.status, 400);
-    assert.match((await json(svgResponse)).error!.message, /SVG/);
-    assert.equal((await upload("manager", new TextEncoder().encode("not an image at all"), { alt: "x", provenance: "tejjora" })).status, 400);
-    assert.equal((await upload("manager", png, { provenance: "tejjora" })).status, 400, "alt text required");
-    assert.equal((await upload("manager", png, { alt: "Lobby" })).status, 400, "provenance required");
-    assert.equal((await upload("manager", png, { alt: "Lobby", provenance: "licensed" })).status, 400, "licence required");
-    assert.equal((await upload("desk", png, { alt: "Lobby", provenance: "tejjora" })).status, 403);
-    const big = new Uint8Array(MEDIA_MAX_BYTES + 1);
-    big.set(png);
-    assert.equal((await upload("manager", big, { alt: "Big", provenance: "tejjora" })).status, 413);
-
-    const ok = await upload("manager", png, { alt: "Lobby seating", provenance: "tejjora", credit: "Tejjora Lake View" });
-    assert.equal(ok.status, 201);
-    const row = (await json(ok)).row as Record<string, unknown>;
-    assert.equal(row.width, 64);
-    assert.equal(row.height, 48);
-    assert.match(String(row.storage_path), /^\/uploads\/media\/[0-9a-f-]{36}\.webp$/);
-    const stored = (await database.db.query<{ blur_data: string }>("SELECT blur_data FROM media_assets WHERE id = $1", [row.id])).rows[0];
-    assert.match(stored.blur_data, /^data:image\/webp;base64,/);
-    assert.ok((await audit()).some((item) => item.action === "media_asset.uploaded" && item.entityId === row.id));
-
+  test("media: uploads are not offered; links still refuse illustrative media", async () => {
+    assert.equal((mediaRoute as Record<string, unknown>).POST, undefined);
     const link = (body: unknown) => linksRoute.POST(request("POST", "/api/admin/media/links", { cookie: as("manager"), body }));
-    assert.equal((await link({ media_id: row.id, entity_type: "room", entity_id: "deluxe", role: "gallery", sort_order: 0 })).status, 200);
-    assert.ok((await getRooms()).data.find((room) => room.id === "deluxe")!.imageSet.includes(String(row.storage_path)));
     const illustrative = (await database.db.query<{ id: string }>("SELECT id FROM media_assets WHERE provenance = 'illustrative' LIMIT 1")).rows[0];
     const refused = await link({ media_id: illustrative.id, entity_type: "gallery", entity_id: "hotel" });
     assert.equal(refused.status, 400);

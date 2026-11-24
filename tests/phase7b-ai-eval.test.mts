@@ -287,11 +287,11 @@ describe("10. follow-up questions keep their context", () => {
       assert.match(system, new RegExp(`check-in ${checkIn}`));
       assert.match(system, new RegExp(`check-out ${checkOut}`));
       assert.match(system, /room premium/, "the latest room the guest named wins");
-      assert.match(system, /3 adults/);
-      return [call("quote_stay", { roomId: "premium", checkIn, checkOut, adults: 3 })];
+      assert.match(system, /2 adults/);
+      return [call("quote_stay", { roomId: "premium", checkIn, checkOut, adults: 2 })];
     }, say("Here is the Premium quote for the same dates.")]);
     const reply = await ai.reply([
-      { role: "user", content: `For 3 adults, is a deluxe room available from ${checkIn} to ${checkOut}?` },
+      { role: "user", content: `For 2 adults, is a deluxe room available from ${checkIn} to ${checkOut}?` },
       { role: "assistant", content: "Here are the prices for those dates.", intent: "live-availability" },
       { role: "user", content: "and for the premium?" },
     ]);

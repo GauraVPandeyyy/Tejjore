@@ -32,7 +32,9 @@ function certificateAuthority(env: Env) {
  */
 export function databaseConnectionConfig(env: Env = process.env, nodeEnv = env.NODE_ENV): DatabaseConnectionConfig {
   const raw = env.DATABASE_URL?.trim() ?? "";
-  if (env.DATABASE_SSL !== "true") return { connectionString: raw, ssl: undefined };
+  // Hosted databases need TLS: on unless DATABASE_SSL=false or the database is on this machine.
+  const local = /@(localhost|127\.0\.0\.1|\[::1\])[:/]/.test(raw);
+  if (env.DATABASE_SSL === "false" || (env.DATABASE_SSL !== "true" && local)) return { connectionString: raw, ssl: undefined };
 
   let connectionString = raw;
   try {
@@ -47,11 +49,9 @@ export function databaseConnectionConfig(env: Env = process.env, nodeEnv = env.N
   if (ca) return { connectionString, ssl: { rejectUnauthorized: true, ca } };
   if (env.DATABASE_SSL_USE_SYSTEM_CA === "true") return { connectionString, ssl: { rejectUnauthorized: true } };
 
-  if (nodeEnv === "production") {
-    throw new Error(
-      "DATABASE_SSL=true in production requires DATABASE_SSL_CA (PEM), DATABASE_SSL_CA_BASE64, or DATABASE_SSL_USE_SYSTEM_CA=true. Refusing an unverified database TLS connection.",
-    );
-  }
+  // Production: hosted Postgres (Neon, Supabase, RDS...) presents a public-CA certificate, so verify
+  // against the system store instead of refusing to connect when no CA variable was provided.
+  if (nodeEnv === "production") return { connectionString, ssl: { rejectUnauthorized: true } };
   return {
     connectionString,
     ssl: { rejectUnauthorized: false },

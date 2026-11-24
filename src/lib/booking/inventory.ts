@@ -1,4 +1,5 @@
 import "server-only";
+import { bookingMode } from "./mode";
 import type { AvailabilityRoom } from "@/types/booking";
 import type { RoomId } from "@/types/hotel";
 import { readBookingStore } from "./store";
@@ -17,7 +18,7 @@ function datesBetween(checkIn: string, checkOut: string) {
 }
 
 export function bookingEnvironmentMode(): "development" | "production" {
-  return process.env.BOOKING_MODE === "production" ? "production" : "development";
+  return bookingMode();
 }
 
 export async function configuredTotal(roomId: RoomId, date = new Date().toISOString().slice(0, 10)) {
