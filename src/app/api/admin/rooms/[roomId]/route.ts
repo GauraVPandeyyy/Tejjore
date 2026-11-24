@@ -1,17 +1,34 @@
 import { NextResponse } from "next/server";
-import { requireAdminApi } from "@/lib/admin/auth";
+import { recordAudit } from "@/lib/admin/audit";
+import { authorizeAdmin } from "@/lib/admin/authz";
+import { adminErrorResponse } from "@/lib/admin/http";
 import { updateRoomSetting } from "@/lib/admin/operations";
+import { revalidateContent } from "@/lib/content/revalidate";
+import { apiError, readJsonBody, rejectNonJson } from "@/lib/http/api";
 import type { RoomId } from "@/types/hotel";
 
+/** Category base rate and inventory (booking operations, not room content): availability.manage. */
 export async function PUT(request: Request, context: { params: Promise<{ roomId: string }> }) {
-  const session = await requireAdminApi(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  const auth = await authorizeAdmin(request, "availability.manage");
+  if (!auth.ok) return auth.response;
+  const nonJson = rejectNonJson(request);
+  if (nonJson) return nonJson;
   const { roomId } = await context.params;
-  const body = await request.json().catch(() => null) as { baseRate?: number; totalInventory?: number } | null;
-  if (!body || body.baseRate == null || body.totalInventory == null) return NextResponse.json({ error: "Base rate and inventory are required." }, { status: 400 });
+  const body = await readJsonBody<{ baseRate?: number; totalInventory?: number }>(request);
+  if (!body || body.baseRate == null || body.totalInventory == null) return apiError("INVALID_REQUEST", "Base rate and inventory are required.", 400);
   try {
-    return NextResponse.json(await updateRoomSetting(roomId as RoomId, { baseRate: Number(body.baseRate), totalInventory: Number(body.totalInventory) }));
+    const { setting, previous } = await updateRoomSetting(roomId as RoomId, { baseRate: Number(body.baseRate), totalInventory: Number(body.totalInventory) });
+    // Public "from" prices (rooms, room pages, concierge) must match the new booking rate at once.
+    revalidateContent("rates");
+    await recordAudit(auth.admin, {
+      action: "room_setting.updated",
+      entity: "room_setting",
+      entityId: roomId,
+      diff: { baseRate: { from: previous.baseRate, to: setting.baseRate }, totalInventory: { from: previous.totalInventory, to: setting.totalInventory } },
+      request,
+    });
+    return NextResponse.json(setting);
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Room settings could not be updated." }, { status: 400 });
+    return adminErrorResponse("rooms", error, "Room settings could not be updated.");
   }
 }

@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
 import { VirtualTourExperience } from "@/components/virtual-tour/VirtualTourExperience";
 import { virtualTourSceneIds } from "@/data/virtualTour";
+import { seoMetadata } from "@/lib/content/seo";
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   title: "Virtual Tour",
   description: "Explore Tejjora Lake View through its virtual hotel tour, from arrival and rooms to dining and the lake-facing experience.",
   alternates: { canonical: "/virtual-tour" },
 };
+
+/** Code-defined metadata, overridden by the admin SEO entry for this path when one exists. */
+export async function generateMetadata(): Promise<Metadata> {
+  return seoMetadata("/virtual-tour", baseMetadata);
+}
 
 type VirtualTourPageProps = {
   searchParams: Promise<{ scene?: string | string[]; demo360?: string | string[] }>;

@@ -1,7 +1,7 @@
 import type { ArrivalSource, TripPurpose } from "@/types/planner";
 
 export const tripPurposeOptions: Array<{ id: TripPurpose; index: string; label: string; copy: string }> = [
-  { id: "couple", index: "01", label: "Couple", copy: "A quieter stay with room to slow down, dine in and spend time by the view." },
+  { id: "couple", index: "01", label: "Couple", copy: "A quieter stay with room to slow down and dine in at the hotel." },
   { id: "family", index: "02", label: "Family", copy: "Keep rooms, dining, parking and practical requests easy to coordinate." },
   { id: "business", index: "03", label: "Business", copy: "A work-friendly base in Gomti Nagar with Wi-Fi, desk space and direct hotel help." },
   { id: "weekend", index: "04", label: "Weekend getaway", copy: "A short city reset with breakfast, Lucknow time and an unhurried return." },

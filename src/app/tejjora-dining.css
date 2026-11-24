@@ -1,0 +1,466 @@
+/* ==========================================================================
+   Dining + Menu flagship layer (additive; loaded after tejjora-rooms-dining.css).
+   ========================================================================== */
+
+.tj-room-about__text .scroll-reveal-text {
+  font-size: clamp(1.45rem, 2.5vw, 2.05rem);
+}
+
+/* ------------------------------------------------------------------ hero */
+.tj-dining--cine .tj-dining-hero__media {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+.tj-dining-hero__title {
+  font-size: clamp(3rem, 11vw, 6.8rem);
+}
+.tj-dining-hero__morph {
+  margin: -0.2rem 0 0;
+  font-family: var(--tj-display);
+  font-size: clamp(1.45rem, 3.6vw, 2.3rem);
+  font-style: italic;
+  font-weight: 300;
+  line-height: 1.2;
+  color: var(--tj-sand);
+}
+.tj-dining-hero__morph .tj-morph {
+  color: var(--tj-cream);
+}
+
+/* ----------------------------------------------------------------- story */
+.tj-dn-story__grid {
+  display: grid;
+  gap: clamp(28px, 5vw, 56px);
+  align-items: center;
+}
+.tj-dn-story__copy {
+  display: grid;
+  gap: 16px;
+}
+.tj-dn-story__copy .tj-eyebrow {
+  margin: 0;
+  color: var(--tj-sand-700);
+}
+.tj-dn-story__statement {
+  margin: 0;
+  color: var(--tj-lake);
+}
+.tj-dn-story__statement .scroll-reveal-text {
+  font-family: var(--tj-display);
+  font-size: clamp(1.7rem, 3.4vw, 2.6rem);
+  font-weight: 300;
+  line-height: 1.22;
+}
+.tj-dn-story__note {
+  margin: 0;
+  color: var(--tj-ink-soft);
+}
+.tj-dn-story__copy .tj-menu-facts {
+  margin-top: 8px;
+  text-align: left;
+}
+.tj-dn-story__arch {
+  display: grid;
+  justify-items: center;
+}
+@media (min-width: 1024px) {
+  .tj-dn-story__grid {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  }
+}
+
+/* -------------------------------------------------------- menu worlds */
+.tj-dn-worlds {
+  display: grid;
+  gap: 18px;
+  margin-top: clamp(24px, 4vw, 44px);
+}
+.tj-dn-worlds__list {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 2px 0 6px;
+  overflow-x: auto;
+  list-style: none;
+  scrollbar-width: none;
+}
+.tj-dn-worlds__list::-webkit-scrollbar {
+  display: none;
+}
+.tj-dn-worlds__list button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgba(251, 243, 207, 0.28);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--tj-cream);
+  font: inherit;
+  font-size: 0.92rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--tj-fast) var(--tj-ease),
+    color var(--tj-fast) var(--tj-ease),
+    border-color var(--tj-fast) var(--tj-ease);
+}
+.tj-dn-worlds__list button[aria-pressed="true"] {
+  border-color: var(--tj-cream);
+  background: var(--tj-cream);
+  color: var(--tj-lake);
+}
+.tj-dn-worlds__no {
+  font-family: var(--tj-caps);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  opacity: 0.7;
+}
+.tj-dn-worlds__count {
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
+.tj-dn-worlds__stage {
+  position: relative;
+  min-height: 460px;
+  overflow: hidden;
+  border-radius: 26px;
+  background: var(--tj-lake-800);
+  isolation: isolate;
+}
+.tj-dn-worlds__photos {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+.tj-dn-worlds__photos img {
+  object-fit: cover;
+  opacity: 0;
+  transform: scale(1.06);
+  transition:
+    opacity 900ms var(--tj-ease),
+    transform 2400ms var(--tj-ease);
+}
+.tj-dn-worlds__photos img[data-on="true"] {
+  opacity: 1;
+  transform: scale(1);
+}
+.tj-dn-worlds__veil {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(to top, rgba(2, 45, 54, 0.94) 0%, rgba(2, 45, 54, 0.66) 42%, rgba(2, 45, 54, 0.12) 100%),
+    linear-gradient(to right, rgba(2, 45, 54, 0.55), transparent 70%);
+}
+.tj-dn-worlds__panel {
+  display: grid;
+  gap: 12px;
+  align-content: end;
+  min-height: 460px;
+  padding: clamp(20px, 3vw, 38px);
+}
+.tj-dn-worlds__meta {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0;
+  font-family: var(--tj-caps);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tj-sand);
+}
+.tj-dn-worlds__meta span {
+  font-family: var(--tj-display);
+  font-size: 1.6rem;
+  letter-spacing: 0.04em;
+  color: var(--tj-cream);
+}
+.tj-dn-worlds__title {
+  margin: 0;
+  font-family: var(--tj-display);
+  font-size: clamp(2.4rem, 7vw, 4.4rem);
+  font-weight: 300;
+  line-height: 1;
+  color: var(--tj-cream);
+}
+.tj-dn-worlds__dishes {
+  display: grid;
+  gap: 0 32px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.tj-dn-worlds__dishes li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(251, 243, 207, 0.18);
+  color: var(--tj-cream);
+}
+.tj-dn-worlds__dishes strong {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tj-dn-worlds__dishes small {
+  font-size: 0.7rem;
+  font-weight: 400;
+  opacity: 0.72;
+}
+.tj-dn-worlds__more {
+  margin: 0;
+  font-size: 0.86rem;
+  color: rgba(251, 243, 207, 0.72);
+}
+.tj-dn-worlds__panel .tj-pill {
+  justify-self: start;
+  margin-top: 6px;
+}
+.tj-dn-worlds__caption {
+  display: none;
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  margin: 0;
+  max-width: 24ch;
+  font-size: 0.72rem;
+  text-align: right;
+  color: rgba(251, 243, 207, 0.7);
+}
+@media (min-width: 640px) {
+  .tj-dn-worlds__caption {
+    display: block;
+  }
+}
+@media (min-width: 1024px) {
+  .tj-dn-worlds {
+    grid-template-columns: minmax(250px, 0.36fr) minmax(0, 1fr);
+    gap: 28px;
+    align-items: stretch;
+  }
+  .tj-dn-worlds__list {
+    display: grid;
+    align-content: start;
+    gap: 0;
+    padding: 0;
+    overflow: visible;
+    border-top: 1px solid rgba(251, 243, 207, 0.2);
+  }
+  .tj-dn-worlds__list button {
+    display: grid;
+    grid-template-columns: 2rem 1fr auto;
+    width: 100%;
+    min-height: 46px;
+    padding: 0 12px;
+    border: 0;
+    border-bottom: 1px solid rgba(251, 243, 207, 0.2);
+    border-radius: 0;
+    font-size: 0.98rem;
+    text-align: left;
+  }
+  .tj-dn-worlds__list button:hover:not([aria-pressed="true"]) {
+    background: rgba(251, 243, 207, 0.08);
+  }
+  .tj-dn-worlds__stage,
+  .tj-dn-worlds__panel {
+    min-height: 580px;
+  }
+  .tj-dn-worlds__dishes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tj-dn-worlds__photos img {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* Desktop: the order bar and the Mezbaan launcher shared the same fixed corner, so the launcher
+   covered the bar and guests could not open their order. The bar now sits above the launcher. */
+@media (min-width: 1024px) {
+  .tj-cart-bar {
+    bottom: calc(clamp(20px, 2vw, 32px) + 60px + 16px);
+  }
+}
+
+/* ------------------------------------------------------------ room collage depth */
+.tj-dining--cine .tj-dining-room__a,
+.tj-dining--cine .tj-dining-room__b,
+.tj-dining--cine .tj-dining-room__c {
+  overflow: hidden;
+}
+
+/* ================================================================ MENU PAGE */
+.tj-menu-page--cine {
+  padding-top: 0;
+}
+.tj-menu-hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  min-height: min(64svh, 600px);
+  padding: calc(var(--tj-header-h) + 36px) 0 clamp(40px, 7svh, 72px);
+  overflow: hidden;
+  background: var(--tj-lake);
+  color: var(--tj-cream);
+}
+.tj-menu-hero__media {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+.tj-menu-hero__shade {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(to top, rgba(2, 45, 54, 0.94) 0%, rgba(2, 45, 54, 0.55) 50%, rgba(2, 45, 54, 0.3) 100%),
+    linear-gradient(to right, rgba(2, 45, 54, 0.55), transparent 70%);
+}
+.tj-menu-hero__copy {
+  display: grid;
+  gap: 14px;
+}
+.tj-menu-hero__back {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 0.9rem;
+  color: rgba(251, 243, 207, 0.88);
+  text-decoration: none;
+}
+.tj-menu-hero__lead {
+  max-width: 38ch;
+  margin: 0;
+  color: rgba(251, 243, 207, 0.9);
+}
+.tj-menu-hero__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin: 6px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(251, 243, 207, 0.22);
+}
+.tj-menu-hero__facts dt {
+  font-family: var(--tj-caps);
+  font-size: 0.58rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--tj-sand);
+}
+.tj-menu-hero__facts dd {
+  margin: 2px 0 0;
+  font-family: var(--tj-display);
+  font-size: 1.35rem;
+}
+.tj-menu-hero__line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 52px;
+  color: var(--tj-mist);
+  opacity: 0.5;
+}
+.tj-menu-page__body {
+  scroll-margin-top: var(--tj-header-h);
+  padding-top: clamp(20px, 3vw, 40px);
+}
+/* The operating facts now live in the hero. */
+.tj-menu-page--cine .tj-menu-experience > .tj-menu-facts {
+  display: none;
+}
+
+/* ------------------------------------------------- section heads on photographs */
+.tj-menu-section__top {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 22px;
+  background: var(--tj-lake);
+}
+.tj-menu-section__banner {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+.tj-menu-section__banner img {
+  object-fit: cover;
+  opacity: 0.9;
+}
+.tj-menu-section__banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(2, 45, 54, 0.9) 0%, rgba(2, 45, 54, 0.62) 55%, rgba(2, 45, 54, 0.3) 100%);
+}
+.tj-menu-section__top .tj-menu-section__head {
+  position: relative;
+  min-height: clamp(96px, 14vw, 132px);
+  align-items: end;
+  padding: 18px clamp(16px, 2.6vw, 28px);
+  color: var(--tj-cream);
+}
+.tj-menu-section__top .tj-menu-section__no {
+  align-self: start;
+  color: var(--tj-sand);
+}
+.tj-menu-section__top .tj-menu-section__title {
+  font-size: clamp(2rem, 5vw, 3.1rem);
+  color: var(--tj-cream);
+}
+.tj-menu-section__top .tj-menu-section__count {
+  color: rgba(251, 243, 207, 0.8);
+}
+.tj-menu-section__top + .tj-menu-section__note {
+  margin-top: 0.8rem;
+}
+
+/* --------------------------------------------------------------- dish rows */
+.tj-menu-list {
+  border-top: 0;
+  margin-top: 0.4rem;
+}
+.tj-menu-item {
+  padding: 1.15rem 0.35rem;
+  border-radius: 0;
+}
+.tj-menu-item__name {
+  font-family: var(--tj-display);
+  font-size: clamp(1.3rem, 2.4vw, 1.55rem);
+  font-weight: 500;
+  line-height: 1.2;
+}
+.tj-menu-item__price strong {
+  font-family: var(--tj-display);
+  font-size: 1.45rem;
+  font-weight: 500;
+  color: var(--tj-lake);
+}
+.tj-menu-item__price span {
+  font-size: 0.8rem;
+}
+.tj-menu-item__price span strong {
+  font-size: 1.2rem;
+}
+.tj-menu-item[data-in-cart="true"] {
+  background: rgba(255, 100, 55, 0.06);
+}
+.tj-menu-item__add-btn:not(:disabled) {
+  border-color: var(--tj-lake);
+  background: var(--tj-lake);
+  color: var(--tj-cream);
+}
+.tj-menu-item__add-btn:not(:disabled):hover {
+  background: var(--tj-lake-800);
+}

@@ -2,57 +2,74 @@ import { NextResponse } from "next/server";
 import { reservationAccessMatches } from "@/lib/booking/access";
 import { getReservation, settleVerifiedPayment } from "@/lib/booking/reservations";
 import { paymentMode, verifyRazorpaySignature } from "@/lib/payments/razorpay";
-import { rateLimit } from "@/lib/security/rateLimit";
+import { enforceRateLimit } from "@/lib/security/rateLimit";
 import { deliverReservationConfirmation } from "@/lib/email/confirmation";
+import { apiError, guardJsonMutation, internalError, readJsonBody } from "@/lib/http/api";
+
+type VerifyBody = {
+  reference?: string;
+  accessToken?: string;
+  razorpay_order_id?: string;
+  razorpay_payment_id?: string;
+  razorpay_signature?: string;
+  testSuccess?: boolean;
+};
 
 export async function POST(request: Request) {
-  const limited = rateLimit(request, "payment-verify", { limit: 15, windowMs: 15 * 60_000 });
-  if (!limited.allowed) {
-    return NextResponse.json({ error: "Too many payment verification attempts." }, { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } });
-  }
+  const guarded = guardJsonMutation(request);
+  if (guarded) return guarded;
+  const limited = await enforceRateLimit(request, "payment-verify", { limit: 15, windowMs: 15 * 60_000 }, "Too many payment verification attempts.");
+  if (limited) return limited;
 
-  const body = await request.json().catch(() => null) as {
-    reference?: string;
-    accessToken?: string;
-    razorpay_order_id?: string;
-    razorpay_payment_id?: string;
-    razorpay_signature?: string;
-    testSuccess?: boolean;
-  } | null;
-  if (!body?.reference || !body.accessToken) return NextResponse.json({ error: "Verified booking access is required." }, { status: 400 });
+  const body = await readJsonBody<VerifyBody>(request);
+  if (!body?.reference || !body.accessToken) return apiError("ACCESS_REQUIRED", "Verified booking access is required.", 400);
   const reference = body.reference.trim().toUpperCase();
-  const reservation = await getReservation(reference);
-  if (!reservation || !reservationAccessMatches(reservation, body.accessToken)) {
-    return NextResponse.json({ error: "Reservation access could not be verified." }, { status: 403 });
-  }
 
-  if ((reservation.status === "confirmed" || reservation.status === "payment_review") && reservation.paymentStatus === "paid") {
-    return NextResponse.json({ reference: reservation.reference, status: reservation.status, paymentStatus: reservation.paymentStatus, pricing: reservation.pricing }, { headers: { "Cache-Control": "no-store" } });
-  }
+  try {
+    const reservation = await getReservation(reference);
+    if (!reservation || !reservationAccessMatches(reservation, body.accessToken)) {
+      return apiError("ACCESS_DENIED", "Reservation access could not be verified.", 403);
+    }
 
-  const mode = paymentMode();
-  let verified = false;
-  let paymentId = body.razorpay_payment_id ?? "";
-  if (mode === "razorpay" && body.razorpay_order_id && body.razorpay_payment_id && body.razorpay_signature) {
-    verified = reservation.paymentOrderId === body.razorpay_order_id
-      && verifyRazorpaySignature(body.razorpay_order_id, body.razorpay_payment_id, body.razorpay_signature);
-  }
-  if (mode === "test" && body.testSuccess === true && process.env.NODE_ENV !== "production") {
-    verified = reservation.paymentOrderId?.startsWith("test_order_") === true;
-    paymentId = `test_payment_${reservation.reference}`;
-  }
-  if (!verified) {
-    return NextResponse.json({ error: "Payment verification failed. If money was debited, do not retry immediately; the secure gateway callback may still confirm the payment." }, { status: 400 });
-  }
+    const mode = paymentMode();
+    let verified = false;
+    let paymentId = body.razorpay_payment_id ?? "";
+    let orderId = body.razorpay_order_id ?? "";
+    let source: "browser-verify" | "test" = "browser-verify";
+    if (mode === "razorpay" && body.razorpay_order_id && body.razorpay_payment_id && body.razorpay_signature) {
+      // Only the reservation's own current order can be settled from the browser. Payments against
+      // any other order are reconciled by the signed webhook, which carries the gateway amount.
+      verified = reservation.paymentOrderId === body.razorpay_order_id
+        && verifyRazorpaySignature(body.razorpay_order_id, body.razorpay_payment_id, body.razorpay_signature);
+    }
+    if (mode === "test" && body.testSuccess === true && process.env.NODE_ENV !== "production") {
+      verified = reservation.paymentOrderId?.startsWith("test_order_") === true;
+      paymentId = `test_payment_${reservation.reference}`;
+      orderId = reservation.paymentOrderId ?? "";
+      source = "test";
+    }
+    if (!verified) {
+      return apiError(
+        "PAYMENT_NOT_VERIFIED",
+        "Payment verification failed. If money was debited, do not retry immediately; the secure gateway callback may still confirm the payment.",
+        400,
+      );
+    }
 
-  const updated = await settleVerifiedPayment(reservation.reference, paymentId);
-  const email = updated.status === "confirmed" ? await deliverReservationConfirmation(updated.reference) : { status: "not_applicable" as const };
-  return NextResponse.json({
-    reference: updated.reference,
-    status: updated.status,
-    paymentStatus: updated.paymentStatus,
-    pricing: updated.pricing,
-    reviewRequired: updated.status === "payment_review",
-    confirmationEmailStatus: email.status,
-  }, { headers: { "Cache-Control": "no-store" } });
+    // The ledger is re-read and applied inside the store lock, so a concurrent webhook that has
+    // already moved this reservation to payment_review is never downgraded here, and repeating
+    // the same verification is a no-op.
+    const updated = await settleVerifiedPayment(reservation.reference, { paymentId, orderId, source });
+    const email = updated.status === "confirmed" ? await deliverReservationConfirmation(updated.reference) : { status: "not_applicable" as const };
+    return NextResponse.json({
+      reference: updated.reference,
+      status: updated.status,
+      paymentStatus: updated.paymentStatus,
+      pricing: updated.pricing,
+      reviewRequired: updated.status === "payment_review",
+      confirmationEmailStatus: email.status,
+    }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    return internalError("payments/verify", error, "Payment could not be verified right now. Do not pay again; contact the hotel if needed.", { reference });
+  }
 }

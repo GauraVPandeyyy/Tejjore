@@ -7,4 +7,10 @@ if (!password || password.length < 10) {
 }
 const salt = randomBytes(16).toString("hex");
 const hash = scryptSync(password, salt, 64).toString("hex");
-console.log(`scrypt$${salt}$${hash}`);
+const value = `scrypt$${salt}$${hash}`;
+// stdout: the hash exactly as hosting dashboards (Vercel, etc.) take it.
+console.log(value);
+// stderr: the same value for a .env / .env.local file, where Next.js expands "$name" and would delete
+// part of the hash (the account could then never sign in), so every "$" must be written "\$".
+console.error('\nFor a .env / .env.local file write every "$" as "\\$":');
+console.error(value.replaceAll("$", "\\$"));

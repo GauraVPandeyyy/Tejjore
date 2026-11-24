@@ -3,12 +3,18 @@ import { BookingExperience } from "@/components/booking/BookingExperience";
 import { bookingConfig } from "@/data/booking";
 import { guestLimits } from "@/lib/booking/validation";
 import type { RoomId } from "@/types/hotel";
+import { seoMetadata } from "@/lib/content/seo";
 
-export const metadata: Metadata = {
-  title: "Book Direct | Tejjora Lake View",
+const baseMetadata: Metadata = {
+  title: "Book Direct",
   description: "Check room-category availability, see configured rates and reserve a direct stay at Tejjora Lake View in Gomti Nagar, Lucknow.",
   alternates: { canonical: "/book" },
 };
+
+/** Code-defined metadata, overridden by the admin SEO entry for this path when one exists. */
+export async function generateMetadata(): Promise<Metadata> {
+  return seoMetadata("/book", baseMetadata);
+}
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -48,7 +54,7 @@ export default async function BookPage({ searchParams }: { searchParams: SearchP
   const roomCount = Math.min(count(one(params.rooms), 1, guestLimits.rooms), adults);
 
   return (
-    <main className="booking-page">
+    <main className="tj-page">
       <BookingExperience
         initial={{
           checkIn,

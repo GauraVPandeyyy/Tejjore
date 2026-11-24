@@ -28,11 +28,11 @@ export function PanoramaDemoLab() {
   const scene = useMemo(() => createDemoScene(demoId), [demoId]);
 
   return (
-    <section className="vt-demo-lab site-container" aria-labelledby="vt-demo-heading">
+    <section className="tj-container tj-section--tight vt-demo-lab" aria-labelledby="vt-demo-heading">
       <div className="vt-demo-lab__intro">
         <div>
-          <span className="micro">DEVELOPMENT QA ONLY</span>
-          <h2 id="vt-demo-heading">360 viewer test bench</h2>
+          <span className="tj-eyebrow">Development QA only</span>
+          <h2 id="vt-demo-heading" className="tj-subheading">360 viewer test bench</h2>
         </div>
         <p>
           These supplied 2:1 panoramas are used only to validate the immersive viewer. They are not
@@ -40,12 +40,13 @@ export function PanoramaDemoLab() {
         </p>
       </div>
 
-      <div className="vt-demo-lab__switch" role="group" aria-label="Choose development panorama">
+      <div className="tj-chip-row vt-demo-lab__switch" role="group" aria-label="Choose development panorama">
         {immersiveDemoPanoramas.map((asset) => (
           <button
             key={asset.id}
             type="button"
-            data-active={demoId === asset.id ? "true" : "false"}
+            className="tj-chip"
+            aria-pressed={demoId === asset.id}
             onClick={() => setDemoId(asset.id)}
           >
             {asset.id === "demo-living" ? "Living-room demo" : "Kitchen demo"}

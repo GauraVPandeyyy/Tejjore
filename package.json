@@ -3,12 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/copy-maplibre-worker.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/copy-maplibre-worker.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --import ./tests/setup/register.mjs --test \"tests/*.test.mts\"",
+    "qa:isolated": "node scripts/qa/isolated-env.mjs",
+    "qa:capture": "node scripts/qa/capture.mjs",
+    "qa:runtime": "node scripts/qa/phase1-runtime-checks.mjs",
     "validate:config": "node scripts/validate-config.mjs",
+    "diagnose:config": "node scripts/diagnose-config.mjs",
     "validate:stage9": "node scripts/validate-stage9.mjs",
     "validate:stage10": "node scripts/validate-stage10.mjs",
     "validate:stage11": "node scripts/validate-stage11.mjs",
@@ -25,29 +32,37 @@
     "validate:stage12-final": "node scripts/validate-stage12-final.mjs",
     "validate:stage12-10": "node scripts/validate-stage12-10.mjs",
     "db:migrate": "node scripts/db-migrate.mjs",
-    "db:seed": "node scripts/db-seed.mjs"
+    "db:status": "node scripts/db-migrate.mjs --status",
+    "db:seed": "node --import tsx scripts/db-seed.mjs",
+    "db:verify": "node --import tsx scripts/db-verify.mjs"
   },
   "dependencies": {
     "@fontsource/cinzel": "^5.3.0",
     "@fontsource/cormorant-garamond": "^5.3.0",
     "@fontsource/lora": "^5.3.0",
     "gsap": "3.15.0",
+    "maplibre-gl": "6.16.0",
     "marzipano": "0.10.2",
     "motion": "13.4.3",
-    "next": "16.3.5",
+    "next": "16.3.8",
     "pg": "8.16.3",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "three": "0.186.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "^22.0.0",
     "@types/pg": "^8.15.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/three": "0.186.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "16.3.5",
+    "playwright-core": "1.63.0",
     "tailwindcss": "4.3.3",
+    "tsx": "4.23.15",
     "typescript": "^5.9.0"
   }
 }

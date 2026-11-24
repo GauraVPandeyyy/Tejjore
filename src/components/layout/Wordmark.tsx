@@ -1,26 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
 
-type WordmarkProps = {
-  compact?: boolean;
-};
-
-export function Wordmark({ compact = false }: WordmarkProps) {
+/** Header lockup: the official Tejjora mark plus the wordmark set in the display face. */
+export function Wordmark() {
   return (
-    <Link className="wordmark" href="/" aria-label="Tejjora Lake View home" data-compact={compact ? "true" : "false"}>
-      <span className="wordmark__mark" aria-hidden="true">
-        <Image
-          src="/brand/tejjora-mark.png"
-          alt=""
-          width={980}
-          height={900}
-          sizes="48px"
-          priority
-        />
+    <Link className="tj-wordmark" href="/" aria-label="Tejjora Lake View home">
+      <span className="tj-wordmark__mark" aria-hidden="true">
+        <Image src="/brand/tejjora-mark.png" alt="" width={1686} height={2048} sizes="40px" />
       </span>
-      <span className="wordmark__copy" aria-hidden="true">
-        <span className="wordmark__primary">TEJJORA</span>
-        <span className="wordmark__secondary">LAKE VIEW</span>
+      <span className="tj-wordmark__copy" aria-hidden="true">
+        <span className="tj-wordmark__primary">Tejjora</span>
+        <span className="tj-wordmark__secondary">Lake View</span>
       </span>
     </Link>
   );

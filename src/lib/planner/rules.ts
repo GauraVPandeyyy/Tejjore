@@ -37,7 +37,7 @@ function nearbyForPurpose(purpose: PlanMyStayInput["purpose"]) {
 
 function buildSuggestions(input: PlanMyStayInput): StayPlanSuggestion[] {
   const tone: Record<PlanMyStayInput["purpose"], string> = {
-    couple: "Leave room in the itinerary for dinner, the terrace and a slower morning.",
+    couple: "Leave room in the itinerary for dinner at the hotel and a slower morning.",
     family: "Share the group size and practical room requirements early so the hotel can confirm the right setup.",
     business: "Keep the room as a reliable base around meetings rather than adding unnecessary travel between tasks.",
     weekend: "Balance one or two Lucknow plans with enough unstructured time back at the hotel.",
@@ -67,4 +67,14 @@ export function createStayPlan(input: PlanMyStayInput): PlanMyStayResult {
     suggestions: buildSuggestions(input),
     nearbyPlaceIds: nearbyForPurpose(input.purpose),
   };
+}
+
+/**
+ * The trips the stay planner suggests a room for, with its reason (the same rule createStayPlan
+ * applies). Room pages show this as "Suggested for", so the pages and the planner never disagree.
+ */
+export function plannerSuggestionsForRoom(roomId: RoomId) {
+  return (Object.keys(roomByPurpose) as Array<PlanMyStayInput["purpose"]>)
+    .filter((purpose) => roomByPurpose[purpose] === roomId)
+    .map((purpose) => ({ purpose, reason: roomReasons[purpose] }));
 }

@@ -5,6 +5,7 @@ import { nearbyPlaces } from "@/data/nearby";
 import { restaurant } from "@/data/restaurant";
 import { rooms } from "@/data/rooms";
 import type { ConciergeAction, ConciergeReply } from "./provider";
+import { matchesAny, normalizeForIntent } from "./matching";
 
 const roomNames = rooms.map((room) => room.name).join(", ");
 const amenityLabels = amenities.map((item) => item.label).join(", ");
@@ -42,12 +43,14 @@ function reply(intent: string, content: string, replyActions: ConciergeAction[] 
   return { role: "assistant", intent, content, actions: replyActions };
 }
 
-function containsAny(text: string, words: string[]) {
-  return words.some((word) => text.includes(word));
+// Whole-word / whole-phrase matching (see ./matching). Never substring matching.
+function containsAny(tokens: string[], phrases: string[]) {
+  return matchesAny(tokens, phrases);
 }
 
 export function answerConciergeMessage(input: string): ConciergeReply {
   const text = input.trim().toLowerCase().replace(/\s+/g, " ");
+  const tokens = normalizeForIntent(input);
 
   if (!text) {
     return reply(
@@ -65,7 +68,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
     );
   }
 
-  if (containsAny(text, ["pet", "pets", "dog", "cat"])) {
+  if (containsAny(tokens, ["pet", "pets", "dog", "dogs", "cat", "cats", "puppy", "kitten"])) {
     return reply(
       "unconfirmed-policy",
       "I do not have a confirmed pet policy in the hotel information available here. Please check directly with Tejjora before travelling with a pet.",
@@ -73,7 +76,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
     );
   }
 
-  if (containsAny(text, ["check in", "check-in", "checkin", "check out", "check-out", "checkout", "cancellation", "cancel", "policy", "policies", "id proof", "identity proof"])) {
+  if (containsAny(tokens, ["check in", "check-in", "checkin", "check out", "check-out", "checkout", "cancellation", "cancel", "policy", "policies", "id proof", "identity proof"])) {
     return reply(
       "unconfirmed-policy",
       "Those hotel policies and exact check-in/check-out times are not confirmed in the information available to me. Tejjora can confirm the applicable details for your stay directly.",
@@ -81,7 +84,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
     );
   }
 
-  if (containsAny(text, ["price", "rate", "rates", "cost", "tariff", "cheap", "discount", "offer", "deal"])) {
+  if (containsAny(tokens, ["price", "rate", "rates", "cost", "tariff", "cheap", "discount", "offer", "deal"])) {
     return reply(
       "rates",
       "Room rates can vary by date and current hotel configuration. Use Check Dates for the current website rate; I will not invent unconfigured inclusions, charges or policies.",
@@ -89,7 +92,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
     );
   }
 
-  const availabilityLanguage = containsAny(text, [
+  const availabilityLanguage = containsAny(tokens, [
     "availability",
     "available",
     "vacant",
@@ -98,16 +101,10 @@ export function answerConciergeMessage(input: string): ConciergeReply {
     "rooms left",
     "sold out",
   ]);
-  const availabilityContext = containsAny(text, [
-    "room",
-    "rooms",
-    "stay",
-    "date",
-    "tonight",
-    "tomorrow",
-    "weekend",
-    "booking",
-  ]);
+  // "Is breakfast available during my stay?" is about breakfast, not room inventory.
+  const nonRoomSubject = containsAny(tokens, ["breakfast", "lunch", "dinner", "food", "meal", "menu", "restaurant", "parking", "wifi", "wi fi", "pickup", "pick up", "airport", "taxi", "cab", "laundry"]);
+  const availabilityContext = containsAny(tokens, ["room", "rooms", "deluxe", "premium"])
+    || (!nonRoomSubject && containsAny(tokens, ["stay", "date", "tonight", "tomorrow", "weekend", "booking"]));
   if (text === "availability" || (availabilityLanguage && availabilityContext)) {
     return reply(
       "availability",
@@ -116,7 +113,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
     );
   }
 
-  if (containsAny(text, ["book", "booking", "reservation", "reserve", "stay request"])) {
+  if (containsAny(tokens, ["book", "booking", "reservation", "reserve", "stay request"])) {
     return reply(
       "booking",
       "You can check dates, choose an available room category, review the configured price and proceed through checkout. A reservation becomes confirmed only after the booking/payment flow reaches a confirmed state.",
@@ -124,7 +121,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
     );
   }
 
-  if (containsAny(text, ["which room", "choose room", "right room", "best room", "recommend room", "room type", "room category", "deluxe", "super deluxe", "premium room", "rooms"])) {
+  if (containsAny(tokens, ["which room", "choose room", "right room", "best room", "recommend room", "room type", "room category", "deluxe", "super deluxe", "premium room", "rooms"])) {
     return reply(
       "rooms",
       `Tejjora currently has three room categories: ${roomNames}. The confirmed data does not yet include final bed type, room size, occupancy or a guaranteed room-level lake view, so I will not guess those details. For a tailored suggestion based on your trip, use Plan My Stay.`,
@@ -132,7 +129,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
     );
   }
 
-  if (containsAny(text, ["lake view", "terrace", "view", "lake"])) {
+  if (containsAny(tokens, ["lake view", "terrace", "view", "lake"])) {
     return reply(
       "lake-view",
       "The lake/terrace experience is a signature part of Tejjora's website experience. Room-specific lake views have not been confirmed for every category, so please do not treat the view as guaranteed for a particular room unless the hotel confirms it.",
@@ -140,7 +137,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
     );
   }
 
-  if (containsAny(text, ["parking", "car park", "park my car"])) {
+  if (containsAny(tokens, ["parking", "car park", "park my car"])) {
     return reply(
       "parking",
       "Yes. Free private parking is listed among Tejjora Lake View's confirmed hotel amenities.",
@@ -148,7 +145,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
     );
   }
 
-  if (containsAny(text, ["wifi", "wi-fi", "internet"])) {
+  if (containsAny(tokens, ["wifi", "wi-fi", "internet"])) {
     return reply(
       "wifi",
       "Yes. Free Wi-Fi is listed among the confirmed hotel amenities.",
@@ -156,7 +153,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
     );
   }
 
-  if (containsAny(text, ["breakfast", "vegetarian", "veg food", "morning meal"])) {
+  if (containsAny(tokens, ["breakfast", "vegetarian", "veg food", "morning meal"])) {
     return reply(
       "breakfast",
       "Tejjora lists daily breakfast and a vegetarian breakfast option. Exact menu items, timings and final inclusions should be confirmed with the hotel for your stay.",
@@ -164,7 +161,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
     );
   }
 
-  if (containsAny(text, ["restaurant", "dining", "dinner", "food", "meal", "table"])) {
+  if (containsAny(tokens, ["restaurant", "dining", "dinner", "food", "meal", "table"])) {
     return reply(
       "restaurant",
       `${restaurant.positioning} Tejjora has an on-site restaurant, and breakfast is listed as available. Restaurant timings, menu and table availability are not yet confirmed in the website data.`,
@@ -172,7 +169,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
     );
   }
 
-  if (containsAny(text, ["amenities", "facility", "facilities", "what do you have", "features"])) {
+  if (containsAny(tokens, ["amenities", "facility", "facilities", "what do you have", "features"])) {
     return reply(
       "amenities",
       `Confirmed amenities currently include ${amenityLabels}. Room-specific details can vary, so the hotel should confirm anything essential to your stay.`,
@@ -180,7 +177,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
     );
   }
 
-  if (containsAny(text, ["virtual", "360", "tour", "see room", "look around"])) {
+  if (containsAny(tokens, ["virtual", "360", "tour", "see room", "look around"])) {
     return reply(
       "virtual-tour",
       "You can open Tejjora's virtual-tour experience from the site. The viewer architecture is designed for hotel and room scenes; final spherical panorama coverage depends on the available 360 photography.",
@@ -189,7 +186,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
   }
 
   const igp = nearbyPlaces.find((place) => place.id === "igp");
-  if (containsAny(text, ["indira gandhi", "igp", "pratishthan"])) {
+  if (containsAny(tokens, ["indira gandhi", "igp", "pratishthan"])) {
     return reply(
       "directions-igp",
       "Indira Gandhi Pratishthan is one of the nearby business/event destinations highlighted by Tejjora. I will not invent a live travel time; open the route for current directions.",
@@ -201,7 +198,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
   }
 
   const airport = nearbyPlaces.find((place) => place.id === "airport");
-  if (containsAny(text, ["airport", "flight", "pickup", "pick up"])) {
+  if (containsAny(tokens, ["airport", "flight", "pickup", "pick up"])) {
     return reply(
       "airport",
       "For an airport arrival, Plan My Stay can include an airport-pickup request. Pickup availability and pricing are confirmed by the hotel, and live travel time should be checked in Maps.",
@@ -213,7 +210,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
   }
 
   const railway = nearbyPlaces.find((place) => place.id === "railway");
-  if (containsAny(text, ["railway", "station", "train"])) {
+  if (containsAny(tokens, ["railway", "station", "train"])) {
     return reply(
       "railway",
       "Tejjora's stay planner supports railway arrivals. I will not guess a live journey time; use the route link for current directions.",
@@ -225,7 +222,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
   }
 
   const mall = nearbyPlaces.find((place) => place.id === "singapore-mall");
-  if (containsAny(text, ["singapore mall", "shopping", "mall"])) {
+  if (containsAny(tokens, ["singapore mall", "shopping", "mall"])) {
     return reply(
       "nearby-shopping",
       "Singapore Mall is one of the nearby places highlighted on the Tejjora website. For current route conditions, open directions rather than relying on a fixed travel time.",
@@ -237,7 +234,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
   }
 
   const memorial = nearbyPlaces.find((place) => place.id === "ambedkar-memorial");
-  if (containsAny(text, ["ambedkar", "memorial", "sightseeing", "nearby", "explore lucknow"])) {
+  if (containsAny(tokens, ["ambedkar", "memorial", "sightseeing", "nearby", "explore lucknow"])) {
     return reply(
       "nearby",
       "Tejjora highlights nearby Lucknow destinations including Dr. B. R. Ambedkar Memorial, Singapore Mall and Indira Gandhi Pratishthan. Use the location section for routes; live journey times are not stored on the site.",
@@ -248,7 +245,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
     );
   }
 
-  if (containsAny(text, ["address", "where are you", "where is", "location", "gomti nagar", "vikalp khand", "directions", "reach hotel", "navigate"])) {
+  if (containsAny(tokens, ["address", "where are you", "where is", "where is tejjora", "located", "location", "gomti nagar", "vikalp khand", "directions", "direction", "reach hotel", "reach tejjora", "how to reach", "get to", "get there", "find the hotel", "navigate", "route to tejjora"])) {
     return reply(
       "location",
       `Tejjora Lake View is at ${fullAddress}. The location section can open current directions from your device; I will not estimate live traffic or travel time.`,
@@ -256,7 +253,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
     );
   }
 
-  if (containsAny(text, ["phone", "call", "contact", "whatsapp", "number", "talk to hotel", "reception"])) {
+  if (containsAny(tokens, ["phone", "call", "contact", "whatsapp", "number", "talk to hotel", "reception"])) {
     return reply(
       "contact",
       `You can contact Tejjora Lake View on ${hotel.phoneDisplay}. WhatsApp is also available on the same hotel number.`,
@@ -264,7 +261,7 @@ export function answerConciergeMessage(input: string): ConciergeReply {
     );
   }
 
-  if (containsAny(text, ["plan my stay", "plan stay", "business trip", "family trip", "event trip", "city break", "short stay"])) {
+  if (containsAny(tokens, ["plan my stay", "plan stay", "plan a", "plan my", "business trip", "family", "family trip", "event trip", "city break", "short stay", "vacation", "holiday"])) {
     return reply(
       "planner",
       "Plan My Stay can suggest a room category and build a simple arrival/stay plan from your trip purpose, arrival mode, dates, guests and preferences. It is guidance, not a live availability decision.",

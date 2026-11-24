@@ -1,0 +1,1318 @@
+/* ==========================================================================
+   Mezbaan — Tejjora's AI host (Phase 7A). Loaded after tejjora-experience.css
+   and built only from the Phase 4 tokens: a lake header with living water, a
+   paper thread, ember as the accent only. Mobile first: a full-screen sheet
+   below 1024 px (the dock opens it), a floating panel and launcher above.
+   ========================================================================== */
+
+.tj-ai {
+  --tj-ai-paper: #fbf8f0;
+  --tj-ai-card: #fffdf8;
+  --tj-ai-hair: rgba(2, 45, 54, 0.12);
+  --tj-ai-radius: 22px;
+  font-family: var(--tj-sans);
+  color: var(--tj-ink);
+}
+
+/* ------------------------------------------------------------ the mark */
+.tj-ai-mark {
+  display: block;
+  flex: none;
+}
+.tj-ai-mark__spark {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tj-ai-launcher:hover .tj-ai-mark__spark,
+  .tj-ai-msg__avatar--thinking .tj-ai-mark__spark {
+    animation: tj-ai-spark 1.6s var(--tj-ease) infinite;
+  }
+  .tj-ai-msg__avatar--thinking .tj-ai-mark__wave {
+    animation: tj-ai-wave 1.6s ease-in-out infinite;
+  }
+}
+@keyframes tj-ai-spark {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.35) rotate(45deg);
+  }
+}
+@keyframes tj-ai-wave {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(1.5px);
+  }
+}
+
+/* ------------------------------------------------------------ launcher (desktop) */
+.tj-ai-launcher {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .tj-ai-launcher {
+    position: fixed;
+    right: clamp(20px, 2vw, 32px);
+    bottom: clamp(20px, 2vw, 32px);
+    z-index: 85;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 60px;
+    padding: 6px 22px 6px 6px;
+    border: 1px solid rgba(251, 243, 207, 0.22);
+    border-radius: 999px;
+    background: var(--tj-lake);
+    color: var(--tj-cream);
+    box-shadow:
+      0 18px 48px rgba(1, 25, 30, 0.28),
+      0 2px 6px rgba(1, 25, 30, 0.18);
+    cursor: pointer;
+    transition:
+      transform var(--tj-fast) var(--tj-ease),
+      box-shadow var(--tj-fast) var(--tj-ease),
+      opacity var(--tj-fast) var(--tj-ease);
+  }
+  .tj-ai-launcher:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 24px 56px rgba(1, 25, 30, 0.32),
+      0 2px 6px rgba(1, 25, 30, 0.18);
+  }
+  .tj-ai[data-open="true"] .tj-ai-launcher {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+  }
+  html[data-menu-open] .tj-ai-launcher {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+.tj-ai-launcher__orb {
+  position: relative;
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 30%, #0f5563, var(--tj-lake) 70%);
+  color: var(--tj-cream);
+  isolation: isolate;
+}
+.tj-ai-launcher__orb::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: inherit;
+  background: conic-gradient(from 0deg, rgba(251, 243, 207, 0.05), rgba(251, 243, 207, 0.65), rgba(255, 100, 55, 0.55), rgba(251, 243, 207, 0.05) 70%);
+  -webkit-mask: radial-gradient(circle, transparent 60%, #000 61%);
+  mask: radial-gradient(circle, transparent 60%, #000 61%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tj-ai-launcher__orb::before {
+    animation: tj-ai-orbit 7s linear infinite;
+  }
+}
+@keyframes tj-ai-orbit {
+  to {
+    transform: rotate(1turn);
+  }
+}
+.tj-ai-launcher__text {
+  display: grid;
+  text-align: left;
+  font-family: var(--tj-display);
+  font-size: 1.45rem;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.01em;
+}
+.tj-ai-launcher__text small {
+  margin-bottom: 3px;
+  font-family: var(--tj-caps);
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(251, 243, 207, 0.7);
+}
+.tj-ai-launcher:focus-visible,
+.tj-ai :focus-visible {
+  outline: 2px solid var(--tj-ember);
+  outline-offset: 3px;
+}
+
+/* ------------------------------------------------------------ panel */
+.tj-ai-scrim {
+  display: none;
+}
+.tj-ai-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: var(--tj-ai-paper);
+  overflow: hidden;
+}
+.tj-ai-panel[hidden] {
+  display: none;
+}
+html[data-ai-open],
+html[data-ai-open] body {
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tj-ai-panel:not([hidden]) {
+    animation: tj-ai-rise 360ms var(--tj-ease) both;
+  }
+}
+@keyframes tj-ai-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+}
+@media (min-width: 1024px) {
+  html[data-ai-open],
+  html[data-ai-open] body {
+    overflow: auto;
+  }
+  .tj-ai-panel {
+    inset: auto clamp(20px, 2vw, 32px) clamp(20px, 2vw, 32px) auto;
+    width: min(440px, calc(100vw - 48px));
+    height: min(740px, calc(100svh - var(--tj-header-h) - 48px));
+    border: 1px solid var(--tj-ai-hair);
+    border-radius: 28px;
+    box-shadow:
+      0 40px 100px rgba(1, 25, 30, 0.3),
+      0 8px 24px rgba(1, 25, 30, 0.12);
+    transform-origin: bottom right;
+  }
+}
+
+/* ------------------------------------------------------------ header */
+.tj-ai-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: calc(14px + env(safe-area-inset-top)) 16px 16px 18px;
+  background:
+    radial-gradient(120% 140% at 85% 0%, rgba(251, 243, 207, 0.16), transparent 55%),
+    linear-gradient(180deg, #0c4a56 0%, var(--tj-lake) 78%);
+  color: var(--tj-cream);
+  isolation: isolate;
+}
+@media (min-width: 1024px) {
+  .tj-ai-head {
+    padding: 20px 18px 20px 22px;
+  }
+}
+.tj-ai-head__ambient {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+}
+.tj-ai-head__ambient::after {
+  /* Lets the header text sit on calmer water. */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(2, 45, 54, 0.78), rgba(2, 45, 54, 0.15) 75%);
+}
+.tj-ai-head__mark {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  flex: none;
+  place-items: center;
+  border: 1px solid rgba(251, 243, 207, 0.32);
+  border-radius: 50%;
+  background: rgba(1, 25, 30, 0.35);
+  backdrop-filter: blur(6px);
+}
+.tj-ai-head__id {
+  min-width: 0;
+  flex: 1;
+}
+.tj-ai-head__eyebrow,
+.tj-ai-head__status {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.tj-ai-head__eyebrow {
+  margin: 0;
+  font-family: var(--tj-caps);
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(251, 243, 207, 0.72);
+}
+@media (max-width: 479px) {
+  .tj-ai-head__brand {
+    display: none;
+  }
+}
+.tj-ai-head h2 {
+  margin: 2px 0 0;
+  font-family: var(--tj-display);
+  font-size: 2rem;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.005em;
+}
+.tj-ai-head__status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 6px 0 0;
+  font-size: 0.74rem;
+  color: rgba(251, 243, 207, 0.78);
+}
+.tj-ai-live {
+  position: relative;
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: #7bd3a8;
+  box-shadow: 0 0 0 3px rgba(123, 211, 168, 0.2);
+}
+.tj-ai-msg__source .tj-ai-live {
+  background: #2f8f6b;
+  box-shadow: 0 0 0 3px rgba(47, 143, 107, 0.16);
+}
+.tj-ai-head__tools {
+  display: flex;
+  gap: 8px;
+  align-self: flex-start;
+}
+.tj-ai-icon-btn {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  place-items: center;
+  border: 1px solid rgba(251, 243, 207, 0.26);
+  border-radius: 50%;
+  background: rgba(1, 25, 30, 0.28);
+  color: var(--tj-cream);
+  cursor: pointer;
+  transition: background var(--tj-fast) var(--tj-ease);
+}
+.tj-ai-icon-btn:hover {
+  background: rgba(251, 243, 207, 0.16);
+}
+
+/* ------------------------------------------------------------ living water */
+.tj-lake-ambient {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 900ms var(--tj-ease);
+}
+.tj-lake-ambient[data-ready="true"] {
+  opacity: 1;
+}
+
+/* ------------------------------------------------------------ thread */
+.tj-ai-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-height: 0;
+  padding: 22px 18px 18px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(2, 45, 54, 0.22) transparent;
+}
+@media (min-width: 1024px) {
+  .tj-ai-thread {
+    padding: 24px 22px 18px;
+  }
+}
+
+/* Welcome */
+.tj-ai-welcome__hello {
+  margin: 4px 0 0;
+  font-family: var(--tj-display);
+  font-size: clamp(2.6rem, 9vw, 3.1rem);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1;
+  color: var(--tj-lake);
+}
+.tj-ai-welcome__intro {
+  margin: 10px 0 0;
+  max-width: 34ch;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--tj-ink-soft);
+}
+.tj-ai-topic {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 4px 4px 4px 14px;
+  border: 1px solid var(--tj-ai-hair);
+  border-radius: 999px;
+  background: var(--tj-ai-card);
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--tj-lake);
+}
+.tj-ai-topic span {
+  font-family: var(--tj-caps);
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--tj-sand-700);
+}
+.tj-ai-topic button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(2, 45, 54, 0.06);
+  color: var(--tj-lake);
+  cursor: pointer;
+}
+.tj-ai-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.tj-ai-actions button {
+  display: grid;
+  width: 100%;
+  min-height: 100%;
+  align-content: start;
+  gap: 2px;
+  padding: 14px 14px 13px;
+  border: 1px solid var(--tj-ai-hair);
+  border-radius: 18px;
+  background: var(--tj-ai-card);
+  color: var(--tj-ink);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--tj-fast) var(--tj-ease),
+    transform var(--tj-fast) var(--tj-ease),
+    box-shadow var(--tj-fast) var(--tj-ease);
+}
+.tj-ai-actions button:hover {
+  border-color: rgba(2, 45, 54, 0.32);
+  box-shadow: 0 10px 26px rgba(2, 45, 54, 0.08);
+  transform: translateY(-1px);
+}
+.tj-ai-actions__icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 8px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(2, 45, 54, 0.06);
+  color: var(--tj-lake);
+}
+.tj-ai-actions strong {
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.3;
+  color: var(--tj-lake);
+}
+.tj-ai-actions small {
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--tj-ink-soft);
+}
+.tj-ai-welcome__try {
+  margin: 18px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--tj-ink-soft);
+}
+.tj-ai-welcome__try q {
+  font-style: italic;
+  color: var(--tj-lake);
+}
+
+/* Messages */
+.tj-ai-msg {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tj-ai-msg {
+    animation: tj-ai-in 320ms var(--tj-ease) both;
+  }
+}
+@keyframes tj-ai-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.tj-ai-msg__avatar {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--tj-lake);
+  color: var(--tj-cream);
+}
+.tj-ai-msg__body {
+  min-width: 0;
+  flex: 1;
+}
+.tj-ai-msg__text {
+  margin: 4px 0 0;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  color: var(--tj-ink);
+}
+.tj-ai-msg[data-role="user"] {
+  justify-content: flex-end;
+}
+.tj-ai-msg[data-role="user"] .tj-ai-msg__body {
+  flex: 0 1 auto;
+  max-width: 84%;
+}
+.tj-ai-msg[data-role="user"] .tj-ai-msg__text {
+  margin: 0;
+  padding: 11px 16px;
+  border-radius: 20px 20px 6px 20px;
+  background: var(--tj-lake);
+  color: var(--tj-cream);
+}
+.tj-ai-msg[data-failed="true"] .tj-ai-msg__text {
+  color: var(--tj-ember-600);
+}
+.tj-ai-msg__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.tj-ai-msg__actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(2, 45, 54, 0.22);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--tj-lake);
+  text-decoration: none;
+  transition:
+    background var(--tj-fast) var(--tj-ease),
+    color var(--tj-fast) var(--tj-ease);
+}
+.tj-ai-msg__actions a:hover {
+  background: var(--tj-lake);
+  color: var(--tj-cream);
+}
+.tj-ai-msg__source {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  font-family: var(--tj-caps);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tj-sand-700);
+}
+
+/* Thinking */
+.tj-ai-thinking {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.tj-ai-msg__avatar--thinking {
+  background: linear-gradient(120deg, var(--tj-lake), #0f5563, var(--tj-lake));
+  background-size: 200% 100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tj-ai-msg__avatar--thinking {
+    animation: tj-ai-sheen 1.8s linear infinite;
+  }
+}
+@keyframes tj-ai-sheen {
+  to {
+    background-position: -200% 0;
+  }
+}
+.tj-ai-thinking__text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: var(--tj-display);
+  font-size: 1.08rem;
+  font-style: italic;
+  color: var(--tj-lake);
+}
+.tj-ai-thinking__dots {
+  display: inline-flex;
+  gap: 3px;
+}
+.tj-ai-thinking__dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--tj-ember);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tj-ai-thinking__dots i {
+    animation: tj-ai-dot 1.2s ease-in-out infinite;
+  }
+  .tj-ai-thinking__dots i:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+  .tj-ai-thinking__dots i:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+}
+@keyframes tj-ai-dot {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+/* ------------------------------------------------------------ rich cards */
+.tj-ai-cards {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+.tj-ai-card {
+  padding: 16px;
+  border: 1px solid var(--tj-ai-hair);
+  border-radius: var(--tj-ai-radius);
+  background: var(--tj-ai-card);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+.tj-ai-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-bottom: 10px;
+}
+.tj-ai-card__eyebrow {
+  font-family: var(--tj-caps);
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--tj-sand-700);
+}
+.tj-ai-card__title {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  font-family: var(--tj-display);
+  font-size: 1.35rem;
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--tj-lake);
+}
+.tj-ai-card__title span {
+  font-family: var(--tj-sans);
+  font-size: 0.82rem;
+  color: var(--tj-ink-soft);
+}
+.tj-ai-card__foot {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--tj-ai-hair);
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--tj-ink-soft);
+}
+.tj-ai-card__address {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+.tj-ai-card__address svg {
+  flex: none;
+  margin-top: 3px;
+  color: var(--tj-sand-700);
+}
+.tj-ai-card__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.tj-ai-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgba(2, 45, 54, 0.22);
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--tj-lake);
+  text-decoration: none;
+  cursor: pointer;
+}
+.tj-ai-btn:hover {
+  border-color: var(--tj-lake);
+}
+.tj-ai-btn--solid {
+  border-color: var(--tj-lake);
+  background: var(--tj-lake);
+  color: var(--tj-cream);
+}
+.tj-ai-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.tj-ai-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(217, 72, 31, 0.1);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--tj-ember-600);
+}
+.tj-ai-badge--quiet {
+  background: rgba(2, 45, 54, 0.07);
+  color: var(--tj-lake);
+}
+
+/* Ledger rows: rates, dates, dishes, routes, offers */
+.tj-ai-ledger {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tj-ai-ledger li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--tj-ai-hair);
+}
+.tj-ai-ledger li:first-child {
+  border-top: 0;
+  padding-top: 2px;
+}
+.tj-ai-ledger li[data-unavailable="true"] {
+  opacity: 0.55;
+}
+.tj-ai-ledger__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 650;
+  font-size: 0.9rem;
+  color: var(--tj-lake);
+  text-decoration: none;
+}
+a.tj-ai-ledger__name:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.tj-ai-ledger__value {
+  font-family: var(--tj-display);
+  font-size: 1.3rem;
+  line-height: 1;
+  color: var(--tj-lake);
+  white-space: nowrap;
+}
+.tj-ai-ledger__value small {
+  font-family: var(--tj-sans);
+  font-size: 0.7rem;
+  color: var(--tj-ink-soft);
+}
+.tj-ai-ledger__note {
+  grid-column: 1;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--tj-ink-soft);
+}
+.tj-ai-ledger__action {
+  grid-column: 2;
+  grid-row: span 2;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--tj-lake);
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--tj-cream);
+  text-decoration: none;
+}
+.tj-ai-ledger li:has(.tj-ai-ledger__action):has(.tj-ai-ledger__value) {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+.tj-ai-ledger li:has(.tj-ai-ledger__action):has(.tj-ai-ledger__value) .tj-ai-ledger__action {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+}
+.tj-ai-egg {
+  display: inline-block;
+  width: 9px;
+  height: 11px;
+  border: 1.5px solid var(--tj-sand-700);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+}
+
+/* Menu sections */
+.tj-ai-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tj-ai-sections a {
+  display: grid;
+  gap: 1px;
+  min-height: 56px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(2, 45, 54, 0.045);
+  color: var(--tj-lake);
+  text-decoration: none;
+  transition: background var(--tj-fast) var(--tj-ease);
+}
+.tj-ai-sections a:hover {
+  background: rgba(2, 45, 54, 0.09);
+}
+.tj-ai-sections strong {
+  font-size: 0.84rem;
+  font-weight: 650;
+  line-height: 1.3;
+}
+.tj-ai-sections small {
+  font-size: 0.72rem;
+  color: var(--tj-ink-soft);
+}
+
+/* Room cards: a horizontal shelf */
+.tj-ai-card--rooms {
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+.tj-ai-rooms {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: min(78%, 250px);
+  gap: 12px;
+  margin: 0 -18px;
+  padding: 2px 18px 8px;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 18px;
+  scrollbar-width: none;
+}
+.tj-ai-rooms::-webkit-scrollbar {
+  display: none;
+}
+.tj-ai-room {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+  border: 1px solid var(--tj-ai-hair);
+  border-radius: var(--tj-ai-radius);
+  background: var(--tj-ai-card);
+  scroll-snap-align: start;
+}
+.tj-ai-room__media {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  background: var(--tj-paper-2);
+}
+.tj-ai-room__media img {
+  object-fit: cover;
+}
+.tj-ai-room__body {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 12px 14px 14px;
+}
+.tj-ai-room__name {
+  font-family: var(--tj-display);
+  font-size: 1.35rem;
+  line-height: 1.1;
+  color: var(--tj-lake);
+  text-decoration: none;
+}
+.tj-ai-room__summary {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--tj-ink-soft);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.tj-ai-price {
+  display: block;
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  color: var(--tj-ink-soft);
+}
+.tj-ai-price strong {
+  font-family: var(--tj-display);
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: var(--tj-lake);
+}
+.tj-ai-price small {
+  display: block;
+  font-size: 0.7rem;
+}
+.tj-ai-room__links {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.tj-ai-room__links a {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  border: 1px solid rgba(2, 45, 54, 0.22);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--tj-lake);
+  text-decoration: none;
+}
+.tj-ai-room__links .tj-ai-room__book {
+  border-color: var(--tj-lake);
+  background: var(--tj-lake);
+  color: var(--tj-cream);
+}
+
+/* Feature link (tour, planner) */
+.tj-ai-feature {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--tj-ai-hair);
+  border-radius: var(--tj-ai-radius);
+  background: var(--tj-ai-card);
+  color: var(--tj-ink);
+  text-decoration: none;
+}
+.tj-ai-feature__media {
+  position: relative;
+  min-height: 132px;
+}
+.tj-ai-feature__media img {
+  object-fit: cover;
+}
+.tj-ai-feature__body {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  padding: 14px 16px;
+}
+.tj-ai-feature__body strong {
+  font-family: var(--tj-display);
+  font-size: 1.3rem;
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--tj-lake);
+}
+.tj-ai-feature__body small {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--tj-ink-soft);
+}
+.tj-ai-feature__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--tj-lake);
+}
+
+/* Date tool */
+.tj-ai-dates__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.tj-ai-dates label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  color: var(--tj-ink-soft);
+}
+.tj-ai-dates input {
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid rgba(2, 45, 54, 0.22);
+  border-radius: 14px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--tj-ink);
+}
+
+/* ------------------------------------------------------------ footer + composer */
+.tj-ai-foot {
+  padding: 10px 14px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--tj-ai-hair);
+  background: rgba(251, 248, 240, 0.94);
+  backdrop-filter: blur(10px);
+}
+@media (min-width: 1024px) {
+  .tj-ai-foot {
+    padding: 12px 16px 14px;
+  }
+}
+.tj-ai-suggest {
+  display: flex;
+  gap: 8px;
+  margin: 0 -14px 10px;
+  padding: 2px 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tj-ai-suggest::-webkit-scrollbar {
+  display: none;
+}
+.tj-ai-suggest button {
+  flex: none;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--tj-ai-hair);
+  border-radius: 999px;
+  background: var(--tj-ai-card);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--tj-lake);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tj-ai-suggest button:hover {
+  border-color: rgba(2, 45, 54, 0.4);
+}
+.tj-ai-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 5px 5px 5px 16px;
+  border: 1px solid rgba(2, 45, 54, 0.2);
+  border-radius: 26px;
+  background: #fff;
+  box-shadow: 0 6px 20px rgba(2, 45, 54, 0.06);
+  transition:
+    border-color var(--tj-fast) var(--tj-ease),
+    box-shadow var(--tj-fast) var(--tj-ease);
+}
+.tj-ai-composer:focus-within {
+  border-color: var(--tj-lake);
+  box-shadow: 0 8px 24px rgba(2, 45, 54, 0.1);
+}
+.tj-ai-composer textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  max-height: 132px;
+  padding: 11px 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 16px; /* no iOS zoom */
+  line-height: 1.4;
+  color: var(--tj-ink);
+  resize: none;
+  scrollbar-width: none;
+}
+.tj-ai-composer textarea::-webkit-scrollbar {
+  display: none;
+}
+.tj-ai-composer textarea:focus {
+  outline: none;
+}
+.tj-ai-composer textarea::placeholder {
+  color: rgba(62, 75, 74, 0.7);
+}
+.tj-ai .tj-ai-composer__dates {
+  border-color: transparent;
+  background: rgba(2, 45, 54, 0.06);
+  color: var(--tj-lake);
+}
+.tj-ai .tj-ai-composer__dates[aria-pressed="true"] {
+  background: rgba(2, 45, 54, 0.14);
+}
+.tj-ai-send {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--tj-lake);
+  color: var(--tj-cream);
+  cursor: pointer;
+  transition:
+    transform var(--tj-fast) var(--tj-ease),
+    opacity var(--tj-fast) var(--tj-ease);
+}
+.tj-ai-send:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+.tj-ai-send:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.tj-ai-foot__guardrail {
+  margin: 8px 4px 0;
+  font-size: 0.68rem;
+  line-height: 1.45;
+  color: var(--tj-ink-soft);
+  text-align: center;
+}
+
+/* The dock's AI circle carries the mark (phones and tablets). */
+.tj-dock__ai .tj-ai-mark {
+  color: currentColor;
+}
+
+/* Legacy floating concierge styles are unused now; keep the old container inert if cached HTML loads. */
+.concierge {
+  display: none !important;
+}
+
+/* ===================================================================== v2
+   Layout fixes and conversation polish. */
+
+/* The panel is a grid; without an explicit column, wide children (nowrap suggestion chips, place
+   rows) widened the implicit column and the right edge of the thread and composer was clipped. */
+.tj-ai-panel {
+  grid-template-columns: minmax(0, 1fr);
+}
+.tj-ai-thread {
+  position: relative;
+}
+@media (min-width: 1024px) {
+  .tj-ai-panel {
+    height: min(780px, calc(100svh - var(--tj-header-h) - 36px));
+  }
+}
+
+/* example questions on the welcome screen */
+.tj-ai-try {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.tj-ai-try button {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px dashed rgba(2, 45, 54, 0.28);
+  border-radius: 16px;
+  background: transparent;
+  color: var(--tj-lake);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--tj-fast) var(--tj-ease),
+    border-color var(--tj-fast) var(--tj-ease);
+}
+.tj-ai-try button:hover:not(:disabled) {
+  border-color: var(--tj-lake);
+  background: rgba(2, 45, 54, 0.05);
+}
+.tj-ai-try button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+/* a failed answer can be retried */
+.tj-ai-retry {
+  min-height: 40px;
+  margin: 8px 0 2px;
+  padding: 0 18px;
+  border: 1px solid var(--tj-lake);
+  border-radius: 999px;
+  background: var(--tj-lake);
+  color: var(--tj-cream);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tj-ai-retry:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+/* loading: the status line, and lines that stand where the answer will appear */
+.tj-ai-thinking__body {
+  display: grid;
+  flex: 1;
+  gap: 10px;
+  min-width: 0;
+}
+.tj-ai-skeleton {
+  display: grid;
+  gap: 7px;
+}
+.tj-ai-skeleton i {
+  display: block;
+  height: 10px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, rgba(2, 45, 54, 0.07) 25%, rgba(2, 45, 54, 0.15) 50%, rgba(2, 45, 54, 0.07) 75%);
+  background-size: 200% 100%;
+  animation: tj-ai-shimmer 1.3s linear infinite;
+}
+.tj-ai-skeleton i:nth-child(1) {
+  width: 92%;
+}
+.tj-ai-skeleton i:nth-child(2) {
+  width: 78%;
+}
+.tj-ai-skeleton i:nth-child(3) {
+  width: 54%;
+}
+@keyframes tj-ai-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* launcher teaser (desktop, once per tab) */
+.tj-ai-teaser {
+  position: fixed;
+  right: clamp(20px, 2vw, 32px);
+  bottom: calc(clamp(20px, 2vw, 32px) + 74px);
+  z-index: 84;
+  display: flex;
+  align-items: stretch;
+  max-width: 19rem;
+  border: 1px solid rgba(251, 243, 207, 0.22);
+  border-radius: 18px 18px 6px 18px;
+  background: var(--tj-lake);
+  color: var(--tj-cream);
+  box-shadow: 0 18px 44px rgba(1, 25, 30, 0.3);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tj-ai-teaser {
+    animation: tj-ai-in 500ms var(--tj-ease) both;
+  }
+}
+.tj-ai-teaser__ask {
+  padding: 12px 6px 12px 16px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+}
+.tj-ai-teaser__ask strong {
+  display: block;
+  font-family: var(--tj-display);
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+.tj-ai-teaser__close {
+  align-self: flex-start;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: none;
+  color: rgba(251, 243, 207, 0.7);
+  cursor: pointer;
+}
+@media (max-width: 1023px) {
+  .tj-ai-teaser {
+    display: none;
+  }
+}
+
+/* The suggestion row scrolls sideways; a soft fade on its right edge says so instead of looking cut off. */
+.tj-ai-suggest {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+}

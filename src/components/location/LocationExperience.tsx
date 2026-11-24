@@ -1,38 +1,49 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { hotel } from "@/data/hotel";
+import { assets } from "@/data/assets";
+import { amenities } from "@/data/amenities";
 import { nearbyPlaces } from "@/data/nearby";
-import { SectionLabel } from "@/components/shared/SectionLabel";
-import { GoogleMapExperience } from "@/components/location/GoogleMapExperience";
+import { LANDMARK_POSITIONS } from "@/data/geo";
+import { LocationAtlas } from "@/components/location/LocationAtlas";
+import { ParallaxFrame } from "@/components/motion/ParallaxFrame";
+import { PillAnchor, PillButton } from "@/components/ui/Buttons";
+import { Icon, type IconName } from "@/components/ui/Icon";
+import { Reveal } from "@/components/ui/Motion";
+import { SectionIntro } from "@/components/ui/SectionIntro";
+import { Ornament, Waterline } from "@/components/ui/Waterline";
 
 const destination = `${hotel.address.line1}, ${hotel.address.locality}, ${hotel.address.city}, ${hotel.address.state} ${hotel.address.postalCode}, ${hotel.address.country}`;
+const FROM = `${hotel.address.line1}, ${hotel.address.locality}, ${hotel.address.city} ${hotel.address.postalCode}`;
+const ICONS: Record<string, IconName> = { Shopping: "tray", "Business / Events": "desk", Landmark: "pin", Airport: "compass", Railway: "compass" };
+const label = (id: (typeof amenities)[number]["id"]) => amenities.find((item) => item.id === id)?.label ?? id;
 
-function mapsSearchUrl(query: string) {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-}
-
-function mapsDirectionsUrl(origin?: string) {
-  const params = new URLSearchParams({ api: "1", destination, travelmode: "driving" });
-  if (origin) params.set("origin", origin);
+function mapsDirectionsUrl(options: { origin?: string; to?: string } = {}) {
+  const params = new URLSearchParams({ api: "1", destination: options.to ?? destination, travelmode: "driving" });
+  if (options.origin) params.set("origin", options.origin);
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
 
-export function LocationExperience({ index = "09" }: { index?: string }) {
-  const [status, setStatus] = useState<string>("");
+/**
+ * Location: an arrival-first hero (the building, the address, one-tap routes), the interactive map
+ * as the centrepiece, nearby destination cards, and the hotel's verified details beside its photographs.
+ * No distances or journey times — none are verified — so every route opens live in Google Maps.
+ */
+export function LocationExperience() {
+  const [status, setStatus] = useState("");
 
   function routeFromMyLocation() {
     if (!("geolocation" in navigator)) {
       window.open(mapsDirectionsUrl(), "_blank", "noopener,noreferrer");
       return;
     }
-
     setStatus("Requesting your location…");
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const origin = `${position.coords.latitude},${position.coords.longitude}`;
         setStatus("Opening live directions in Google Maps…");
-        window.open(mapsDirectionsUrl(origin), "_blank", "noopener,noreferrer");
+        window.open(mapsDirectionsUrl({ origin: `${position.coords.latitude},${position.coords.longitude}` }), "_blank", "noopener,noreferrer");
       },
       () => {
         setStatus("Location was not shared. Opening Tejjora in Google Maps instead.");
@@ -43,55 +54,135 @@ export function LocationExperience({ index = "09" }: { index?: string }) {
   }
 
   return (
-    <section id="location" className="location-experience" aria-labelledby="location-title">
-      <div className="site-container">
-        <div className="location-experience__topline">
-          <SectionLabel index={index}>LOCATION</SectionLabel>
-          <span className="micro">VIKALP KHAND · GOMTI NAGAR · LUCKNOW</span>
-        </div>
-
-        <div className="location-experience__grid">
-          <div className="location-experience__title-block">
-            <h2 id="location-title">Right where<br /><em>Lucknow moves.</em></h2>
+    <>
+      <section className="lx-hero" data-hero-overlay="" aria-labelledby="location-title">
+        <Image src={assets.hero.alternateImages[0]} alt="" fill priority sizes="100vw" className="lx-hero__bg" aria-hidden="true" />
+        <span className="lx-hero__shade" aria-hidden="true" />
+        <Waterline className="lx-hero__line" />
+        <div className="tj-container lx-hero__grid">
+          <div className="lx-hero__copy">
+            <p className="tj-eyebrow">Vikalp Khand · Gomti Nagar</p>
+            <h1 id="location-title" className="lx-hero__title">
+              Getting here
+            </h1>
+            <p className="lx-hero__lead">
+              In <strong>Vikalp Khand, Gomti Nagar</strong> — Lucknow&rsquo;s business and residential district.
+            </p>
+            <div className="tj-actions-row tj-actions-row--start">
+              <PillButton variant="cream" arrow onClick={routeFromMyLocation}>
+                Route from my location
+              </PillButton>
+              <PillAnchor variant="outline-light" href={mapsDirectionsUrl()} target="_blank" rel="noreferrer">
+                Directions
+              </PillAnchor>
+              <PillAnchor variant="outline-light" href={`tel:${hotel.phoneE164}`} arrow={false}>
+                <Icon name="phone" size={16} /> Call
+              </PillAnchor>
+            </div>
+            <p className="lx-hero__status" aria-live="polite">
+              {status}
+            </p>
+          </div>
+          <aside className="lx-hero__card" aria-label="The hotel at a glance">
             <address>
-              {hotel.address.line1}<br />
-              {hotel.address.locality}, {hotel.address.city}<br />
+              <span className="tj-eyebrow">Address</span>
+              {hotel.address.line1}
+              <br />
+              {hotel.address.locality}, {hotel.address.city}
+              <br />
               {hotel.address.state} {hotel.address.postalCode}
             </address>
-            <div className="location-experience__actions">
-              <button type="button" onClick={routeFromMyLocation}>Route from my location <span aria-hidden="true">↗</span></button>
-              <a href={mapsSearchUrl(destination)} target="_blank" rel="noreferrer">Open in Maps <span aria-hidden="true">↗</span></a>
-            </div>
-            {status ? <p className="location-experience__status" aria-live="polite">{status}</p> : null}
-          </div>
-
-          <GoogleMapExperience />
-        </div>
-
-        <div className="location-experience__nearby" aria-label="Nearby places">
-          {nearbyPlaces.map((place, index) => (
-            <a key={place.id} href={mapsSearchUrl(place.mapsQuery)} target="_blank" rel="noreferrer">
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              <div>
-                <small>{place.category}</small>
-                <strong>{place.name}</strong>
-              </div>
-              <i aria-hidden="true">↗</i>
+            <a href={`tel:${hotel.phoneE164}`}>
+              <span className="tj-eyebrow">Telephone</span>
+              {hotel.phoneDisplay}
             </a>
-          ))}
+            <p>
+              <span className="tj-eyebrow">At the door</span>
+              {label("front-desk")} · {label("parking")}
+            </p>
+          </aside>
         </div>
+      </section>
 
-        <div className="location-v2__arrival">
-          <article><span className="micro">FLYING IN</span><h3>Start with the live route from the airport.</h3><p>Open Google Maps from Chaudhary Charan Singh International Airport for current routing rather than relying on a stale fixed travel-time promise.</p><a href={mapsSearchUrl("Chaudhary Charan Singh International Airport Lucknow")} target="_blank" rel="noreferrer">Open airport route ↗</a></article>
-          <article><span className="micro">ARRIVING BY TRAIN</span><h3>Use your exact station as the origin.</h3><p>Lucknow has multiple railway arrival points. Live directions are more useful than publishing one generic station time.</p><a href={mapsSearchUrl("Lucknow Junction Railway Station")} target="_blank" rel="noreferrer">Open railway route ↗</a></article>
-          <article><span className="micro">DRIVING</span><h3>Vikalp Khand, with parking at the hotel.</h3><p>Free private parking is listed among Tejjora&apos;s hotel amenities. Use the full property address for turn-by-turn navigation.</p><button type="button" onClick={routeFromMyLocation}>Route from my location ↗</button></article>
+      <section className="lx-atlas-section" data-header-tone="dark" aria-labelledby="atlas-title">
+        <div className="tj-container">
+          <SectionIntro id="atlas-title" title="Find us on the map" tone="lake">
+            <p>Fly down to Gomti Nagar, switch to the whole city, or tap a landmark — every route opens live in Google Maps.</p>
+          </SectionIntro>
+          <LocationAtlas />
         </div>
+      </section>
 
-        <div className="location-v2__note">
-          <span className="micro">EXPLORE THE NEIGHBOURHOOD</span>
-          <p>Business venues, shopping and Lucknow landmarks are kept as live-map destinations so distances and journey times remain current. When Google Routes credentials are added, this section can also surface live travel estimates directly on the site.</p>
+      <section className="tj-section lx-places" aria-labelledby="nearby-title">
+        <div className="tj-container">
+          <SectionIntro id="nearby-title" title="Nearby">
+            <p>Places guests ask about, each with live directions from the hotel.</p>
+          </SectionIntro>
+          <ul className="lx-places__grid">
+            {nearbyPlaces.map((place, index) => (
+              <Reveal as="li" key={place.id} className="lx-card" delay={index * 0.06}>
+                <a href={mapsDirectionsUrl({ origin: FROM, to: place.mapsQuery })} target="_blank" rel="noreferrer" aria-label={`${place.name}: directions from the hotel in Google Maps`}>
+                  <span className="lx-card__no" aria-hidden="true">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <span className="lx-card__icon" aria-hidden="true">
+                    <Icon name={ICONS[place.category] ?? "pin"} size={34} />
+                  </span>
+                  <span className="lx-card__body">
+                    <span className="tj-eyebrow">{place.category}</span>
+                    <span className="lx-card__name">{place.name}</span>
+                    <span className="lx-card__go">
+                      Directions <Icon name="arrow-up-right" size={16} />
+                    </span>
+                    {LANDMARK_POSITIONS[place.id] ? <span className="lx-card__pin">On the map above</span> : null}
+                  </span>
+                </a>
+              </Reveal>
+            ))}
+          </ul>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <section className="tj-section lx-stay" aria-labelledby="stay-title">
+        <div className="tj-container lx-stay__grid">
+          <div className="lx-stay__art">
+            <ParallaxFrame className="lx-stay__arch" speed={8}>
+              <Image src={assets.hero.image} alt="Tejjora Lake View from the street in Gomti Nagar" fill sizes="(min-width: 1024px) 34vw, 78vw" />
+            </ParallaxFrame>
+            <ParallaxFrame className="lx-stay__inset" speed={12} from="left">
+              <Image src={assets.lobby[3]} alt="The arrival area inside the entrance" fill sizes="(min-width: 1024px) 18vw, 40vw" />
+            </ParallaxFrame>
+          </div>
+          <div className="lx-stay__copy">
+            <SectionIntro id="stay-title" title="The hotel, at a glance" as="h2" align="start">
+              <p>Everything you need to find the door and walk in.</p>
+            </SectionIntro>
+            <dl className="lx-stay__facts">
+              <div>
+                <dt>Address</dt>
+                <dd>
+                  {hotel.address.line1}, {hotel.address.locality}, {hotel.address.city} {hotel.address.postalCode}
+                </dd>
+              </div>
+              <div>
+                <dt>Telephone</dt>
+                <dd>
+                  <a href={`tel:${hotel.phoneE164}`}>{hotel.phoneDisplay}</a>
+                </dd>
+              </div>
+              <div>
+                <dt>Front desk</dt>
+                <dd>{label("front-desk")}</dd>
+              </div>
+              <div>
+                <dt>Parking</dt>
+                <dd>{label("parking")}</dd>
+              </div>
+            </dl>
+            <Ornament />
+          </div>
+        </div>
+      </section>
+    </>
   );
 }

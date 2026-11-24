@@ -3,8 +3,9 @@
 import Image from "next/image";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiErrorMessage } from "@/lib/http/clientError";
 
-export function AdminLogin({ configured }: { configured: boolean }) {
+export function AdminLogin({ configured, notice }: { configured: boolean; notice?: string }) {
   const router = useRouter();
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
@@ -21,7 +22,7 @@ export function AdminLogin({ configured }: { configured: boolean }) {
         body: JSON.stringify({ userId, password }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data?.error || "Sign-in failed.");
+      if (!response.ok) throw new Error(apiErrorMessage(data, "Sign-in failed."));
       router.replace("/admin"); router.refresh();
     } catch (caught) { setError(caught instanceof Error ? caught.message : "Sign-in failed."); }
     finally { setBusy(false); }
@@ -33,6 +34,7 @@ export function AdminLogin({ configured }: { configured: boolean }) {
       <span className="admin-eyebrow">Tejjora operations</span>
       <h1 id="admin-login-title">Staff sign in</h1>
       <p>Reservations, arrivals, rates and room availability for the hotel team.</p>
+      {notice && configured && <div className="admin-notice" role="status">{notice}</div>}
       {!configured && <div className="admin-alert" role="alert">Admin access is not configured yet. Add ADMIN_USERS_JSON and ADMIN_SESSION_SECRET on the server.</div>}
       <form onSubmit={submit} className="admin-login-form">
         <label><span>User ID</span><input autoComplete="username" value={userId} onChange={(e)=>setUserId(e.target.value)} disabled={!configured} /></label>

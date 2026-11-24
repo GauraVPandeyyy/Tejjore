@@ -1,4 +1,5 @@
 import type { AvailabilityResponse, BookingRequestPayload, BookingRequestResponse } from "@/types/booking";
+import { ApiError, apiErrorCode, apiErrorMessage } from "@/lib/http/clientError";
 
 // A non-JSON error page (proxy/host 5xx) must surface as a readable error, not a parser exception.
 async function readJson(response: Response): Promise<{ error?: string } & Record<string, unknown>> {
@@ -25,7 +26,7 @@ export const websiteInventoryProvider: InventoryProvider = {
       body: JSON.stringify({ checkIn, checkOut }),
     });
     const data = await readJson(response);
-    if (!response.ok) throw new Error(data?.error || "Availability could not be checked.");
+    if (!response.ok) throw new ApiError(apiErrorMessage(data, "Availability could not be checked."), apiErrorCode(data), response.status);
     return data as unknown as AvailabilityResponse;
   },
 };
@@ -38,7 +39,7 @@ export const websiteBookingProvider: BookingProvider = {
       body: JSON.stringify(input),
     });
     const data = await readJson(response);
-    if (!response.ok) throw new Error(data?.error || "Reservation could not be created.");
+    if (!response.ok) throw new ApiError(apiErrorMessage(data, "Reservation could not be created."), apiErrorCode(data), response.status);
     return data as unknown as BookingRequestResponse;
   },
 };

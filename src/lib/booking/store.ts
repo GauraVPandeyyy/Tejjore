@@ -5,7 +5,7 @@ import type { ReservationRecord } from "@/types/booking";
 import type { RoomId } from "@/types/hotel";
 import type { HotelOperationsConfig } from "@/types/admin";
 import { normalizeOperationsConfig } from "./operations";
-import { postgresConfigured, readPostgresBookingStore, withPostgresBookingStore } from "@/lib/database/postgres";
+import { postgresConfigured, readPostgresBookingStore, readPostgresOperationsConfig, withPostgresBookingStore } from "@/lib/database/postgres";
 
 export type InventoryBlock = {
   id: string;
@@ -135,4 +135,13 @@ export async function readBookingStore() {
     throw new Error("Production booking persistence requires DATABASE_URL. JSON storage is development-only.");
   }
   return readStore();
+}
+
+/** The admin rate/inventory configuration alone, for public price display. Same source as every quote. */
+export async function readOperationsConfig(): Promise<HotelOperationsConfig> {
+  if (postgresConfigured()) return readPostgresOperationsConfig();
+  if (process.env.BOOKING_MODE === "production") {
+    throw new Error("Production booking persistence requires DATABASE_URL. JSON storage is development-only.");
+  }
+  return normalizeOperationsConfig((await readStore()).operations);
 }

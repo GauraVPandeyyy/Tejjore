@@ -1,4 +1,6 @@
-import { DEMO_REVIEWS, reviewSnapshot } from "@/data/reviews";
+import { reviewSnapshot } from "@/data/reviews";
+import { getPublishedTestimonials } from "@/lib/content/testimonials";
+import type { Testimonial } from "@/lib/content/types";
 import type { HotelReview, ReviewFeed } from "@/types/reviews";
 
 type GoogleLocalizedText = { text?: string; languageCode?: string };
@@ -29,14 +31,38 @@ const runtimeEnv = (globalThis as RuntimeGlobal).process?.env ?? {};
 const CACHE_MS = 60 * 60 * 1000;
 let cachedLiveFeed: { expiresAt: number; value: ReviewFeed } | null = null;
 
+// Without the live Google feed there are no displayable reviews: demo review texts must never be
+// presented as guest reviews (content ledger), so the fallback carries none.
 function snapshotFeed(): ReviewFeed {
   return {
-    source: "demo",
+    source: "snapshot",
     rating: reviewSnapshot.rating,
     reviewCount: reviewSnapshot.reviewCount,
     capturedOn: reviewSnapshot.capturedOn,
-    reviews: DEMO_REVIEWS,
+    reviews: [],
   };
+}
+
+const SOURCE_LABELS: Record<Testimonial["source"], string> = { google: "Google", tripadvisor: "Tripadvisor", direct: "Guest", demo: "Demo" };
+
+function testimonialReview(item: Testimonial): HotelReview {
+  return {
+    id: item.id,
+    rating: item.rating ?? 0,
+    text: item.text,
+    publishTime: item.reviewDate ?? undefined,
+    googleMapsUri: item.sourceUrl ?? undefined,
+    sourceLabel: SOURCE_LABELS[item.source],
+    author: { name: item.authorDisplay },
+  };
+}
+
+// Without the live feed: genuine, consented, published testimonials from the content layer
+// (never demo texts); with none, the snapshot feed (link-out only).
+async function fallbackFeed(): Promise<ReviewFeed> {
+  const { data } = await getPublishedTestimonials();
+  if (!data.length) return snapshotFeed();
+  return { source: "testimonials", rating: 0, reviewCount: data.length, reviews: data.slice(0, 3).map(testimonialReview) };
 }
 
 function normalizeReview(review: GoogleReview, index: number): HotelReview | null {
@@ -65,7 +91,7 @@ export async function getReviewFeed(): Promise<ReviewFeed> {
   const apiKey = runtimeEnv.GOOGLE_PLACES_API_KEY?.trim();
   const placeId = runtimeEnv.GOOGLE_PLACE_ID?.trim();
 
-  if (!apiKey || !placeId) return snapshotFeed();
+  if (!apiKey || !placeId) return fallbackFeed();
   if (cachedLiveFeed && cachedLiveFeed.expiresAt > Date.now()) return cachedLiveFeed.value;
 
   try {
@@ -76,11 +102,11 @@ export async function getReviewFeed(): Promise<ReviewFeed> {
       },
     });
 
-    if (!response.ok) return snapshotFeed();
+    if (!response.ok) return fallbackFeed();
 
     const data = (await response.json()) as GooglePlaceResponse;
     if (typeof data.rating !== "number" || typeof data.userRatingCount !== "number") {
-      return snapshotFeed();
+      return fallbackFeed();
     }
 
     const value: ReviewFeed = {
@@ -97,6 +123,6 @@ export async function getReviewFeed(): Promise<ReviewFeed> {
     cachedLiveFeed = { expiresAt: Date.now() + CACHE_MS, value };
     return value;
   } catch {
-    return snapshotFeed();
+    return fallbackFeed();
   }
 }

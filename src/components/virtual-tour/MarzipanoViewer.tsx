@@ -1,9 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { VirtualTourScene } from "@/data/virtualTour";
 import { TourControls } from "./TourControls";
+import { isPlaceholderStill } from "./TourSceneRail";
+import { Icon } from "@/components/ui/Icon";
 
 type MarzipanoViewerProps = {
   scene: VirtualTourScene;
@@ -26,13 +28,30 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+export function isEditableTarget(target: EventTarget | null) {
+  if (!target || typeof (target as HTMLElement).tagName !== "string") return false;
+  const element = target as HTMLElement;
+  const tag = element.tagName.toLowerCase();
+  return tag === "input" || tag === "textarea" || tag === "select" || element.isContentEditable;
+}
+
 export function MarzipanoViewer({ scene, onSceneChange }: MarzipanoViewerProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<MarzipanoViewerInstance | null>(null);
   const viewRef = useRef<MarzipanoView | null>(null);
-  const [viewerState, setViewerState] = useState<ViewerState>(scene.panoramaReady ? "loading" : "fallback");
+  // Only the async outcome for a scene is stored; "fallback" and "loading" are derived.
+  const [attempt, setAttempt] = useState(0);
+  const [outcome, setOutcome] = useState<{ key: string; state: "immersive" | "error" } | null>(null);
+  const outcomeKey = `${scene.id}:${attempt}`;
+  const viewerState: ViewerState = !scene.panoramaReady
+    ? "fallback"
+    : outcome?.key === outcomeKey ? outcome.state : "loading";
   const [fullscreen, setFullscreen] = useState(false);
+  // iOS Safari has no element fullscreen: fall back to a fixed, edge-to-edge "pseudo" fullscreen.
+  const [pseudoFullscreen, setPseudoFullscreen] = useState(false);
+  // The "drag to look" hint shows until the guest first touches the scene.
+  const [touchedScene, setTouchedScene] = useState<string | null>(null);
 
   const destroyViewer = useCallback(() => {
     try {
@@ -49,12 +68,7 @@ export function MarzipanoViewer({ scene, onSceneChange }: MarzipanoViewerProps) 
     let cancelled = false;
     destroyViewer();
 
-    if (!scene.panoramaReady) {
-      setViewerState("fallback");
-      return () => destroyViewer();
-    }
-
-    setViewerState("loading");
+    if (!scene.panoramaReady) return () => destroyViewer();
 
     async function boot() {
       try {
@@ -99,11 +113,11 @@ export function MarzipanoViewer({ scene, onSceneChange }: MarzipanoViewerProps) 
         marzipanoScene.switchTo({ transitionDuration: 700 });
         viewerRef.current = viewer;
         viewRef.current = view;
-        if (!cancelled) setViewerState("immersive");
+        if (!cancelled) setOutcome({ key: `${scene.id}:${attempt}`, state: "immersive" });
       } catch (error) {
         console.error("Virtual tour failed to initialize", error);
         destroyViewer();
-        if (!cancelled) setViewerState("error");
+        if (!cancelled) setOutcome({ key: `${scene.id}:${attempt}`, state: "error" });
       }
     }
 
@@ -113,7 +127,7 @@ export function MarzipanoViewer({ scene, onSceneChange }: MarzipanoViewerProps) 
       cancelled = true;
       destroyViewer();
     };
-  }, [destroyViewer, onSceneChange, scene]);
+  }, [destroyViewer, onSceneChange, scene, attempt]);
 
   useEffect(() => {
     const onFullscreenChange = () => setFullscreen(document.fullscreenElement === shellRef.current);
@@ -121,17 +135,24 @@ export function MarzipanoViewer({ scene, onSceneChange }: MarzipanoViewerProps) 
     return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
   }, []);
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "ArrowLeft") rotate(-0.15);
-      if (event.key === "ArrowRight") rotate(0.15);
-      if (event.key === "+" || event.key === "=") zoom(-0.12);
-      if (event.key === "-") zoom(0.12);
-      if (event.key === "0") resetView();
+  // Keyboard look/zoom only applies while the viewer itself has focus. It never listens on
+  // window, so typing arrows, "+", "-" or "0" in any field (e.g. the concierge) is unaffected.
+  function onViewerKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    if (isEditableTarget(event.target)) return;
+    const actions: Record<string, () => void> = {
+      ArrowLeft: () => rotate(-0.15),
+      ArrowRight: () => rotate(0.15),
+      "+": () => zoom(-0.12),
+      "=": () => zoom(-0.12),
+      "-": () => zoom(0.12),
+      "0": () => resetView(),
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  });
+    const action = actions[event.key];
+    if (!action || !viewRef.current) return;
+    event.preventDefault();
+    action();
+  }
 
   function rotate(deltaYaw: number) {
     const view = viewRef.current;
@@ -154,6 +175,11 @@ export function MarzipanoViewer({ scene, onSceneChange }: MarzipanoViewerProps) 
   async function toggleFullscreen() {
     const shell = shellRef.current;
     if (!shell) return;
+    if (!shell.requestFullscreen) {
+      // No element fullscreen (iOS Safari): toggle the fixed edge-to-edge layout instead.
+      setPseudoFullscreen((current) => !current);
+      return;
+    }
     try {
       if (document.fullscreenElement === shell) {
         await document.exitFullscreen();
@@ -168,15 +194,31 @@ export function MarzipanoViewer({ scene, onSceneChange }: MarzipanoViewerProps) 
   const immersive = viewerState === "immersive";
   const unavailable = viewerState === "fallback" || viewerState === "error";
   const isDemo = scene.mediaKind === "development-demo";
-  const statusLabel = immersive ? (isDemo ? "360° REFERENCE" : "360° VIEW") : "PHOTO PREVIEW";
+  const pending = unavailable && isPlaceholderStill(scene);
+  const statusLabel = immersive ? (isDemo ? "360° DEMO" : "360° VIEW") : pending ? "PHOTOGRAPHY PENDING" : "STILL PREVIEW";
+  const showHint = immersive && touchedScene !== scene.id;
 
   return (
-    <div className="vt-viewer-shell" ref={shellRef} data-mode={viewerState}>
+    <div
+      className="vt-viewer-shell"
+      ref={shellRef}
+      data-mode={viewerState}
+      data-pseudo-fullscreen={pseudoFullscreen ? "true" : undefined}
+      tabIndex={immersive ? 0 : -1}
+      role="group"
+      aria-label={immersive ? `${scene.title} 360 degree viewer. When focused, use the left and right arrow keys to look around, plus and minus to zoom, and 0 to reset.` : `${scene.title} preview`}
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && pseudoFullscreen) setPseudoFullscreen(false);
+        onViewerKeyDown(event);
+      }}
+      onPointerDown={() => setTouchedScene(scene.id)}
+    >
       <div className="vt-viewer-stage" ref={stageRef} aria-label={`${scene.title} 360 degree view`} />
 
-      {unavailable ? (
+      {unavailable && !pending ? (
         <div className="vt-viewer-fallback">
           <Image
+            key={scene.fallbackImage}
             src={scene.fallbackImage}
             alt={isDemo ? `${scene.title} development preview` : `${scene.title} at Tejjora Lake View`}
             fill
@@ -187,6 +229,15 @@ export function MarzipanoViewer({ scene, onSceneChange }: MarzipanoViewerProps) 
         </div>
       ) : null}
 
+      {pending ? (
+        // The scene's only image is a placeholder illustration: never show it as the hotel.
+        <div className="vt-viewer-pending">
+          <Icon name="camera" size={28} />
+          <p className="vt-viewer-pending__title">Not yet photographed</p>
+          <p>This stop opens here once the hotel&rsquo;s own photography is ready.</p>
+        </div>
+      ) : null}
+
       {viewerState === "loading" ? (
         <div className="vt-viewer-loading" role="status" aria-live="polite">
           <span />
@@ -194,31 +245,46 @@ export function MarzipanoViewer({ scene, onSceneChange }: MarzipanoViewerProps) 
         </div>
       ) : null}
 
+      {viewerState === "error" ? (
+        <div className="vt-viewer-retry">
+          <button type="button" className="tj-pill tj-pill--cream tj-pill--small" onClick={() => setAttempt((current) => current + 1)}>
+            <span>Try the 360° view again</span>
+          </button>
+        </div>
+      ) : null}
+
+      {showHint ? (
+        <div className="vt-viewer-hint" aria-hidden="true">
+          <Icon name="drag" size={18} />
+          <span>Drag to look around</span>
+        </div>
+      ) : null}
+
       <div className="vt-viewer-status">
-        <span className="micro">{statusLabel}</span>
+        <span className="vt-viewer-status__label">{statusLabel}</span>
         {isDemo ? (
-          <span className="vt-viewer-status__note">Interactive reference panorama</span>
-        ) : !scene.panoramaReady ? (
-          <span className="vt-viewer-status__note">Continue through the hotel preview</span>
+          <span className="vt-viewer-status__note">Demo panorama · Not Tejjora property media</span>
+        ) : pending ? null : !scene.panoramaReady ? (
+          <span className="vt-viewer-status__note">Photo of the hotel · 360° view to follow</span>
         ) : viewerState === "error" ? (
           <span className="vt-viewer-status__note">360° view unavailable — still preview shown</span>
         ) : null}
       </div>
 
       {!immersive && scene.hotspots.length ? (
-        <div className="vt-fallback-actions" aria-label="Continue virtual tour">
+        <div className="vt-fallback-actions" role="group" aria-label="Continue virtual tour">
           {scene.hotspots.map((hotspot) => {
             if (hotspot.type === "booking" && hotspot.roomId) {
               return (
-                <a key={hotspot.id} href={`/book?room=${hotspot.roomId}`}>
-                  {hotspot.label}<span aria-hidden="true">↗</span>
+                <a key={hotspot.id} className="tj-pill tj-pill--cream tj-pill--small" href={`/book?room=${hotspot.roomId}`}>
+                  {hotspot.label} <span className="tj-pill__dot" aria-hidden="true" />
                 </a>
               );
             }
             if (!hotspot.target) return null;
             return (
-              <button key={hotspot.id} type="button" onClick={() => onSceneChange(hotspot.target!)}>
-                {hotspot.label}<span aria-hidden="true">→</span>
+              <button key={hotspot.id} type="button" className="tj-pill tj-pill--outline-light tj-pill--small" onClick={() => onSceneChange(hotspot.target!)}>
+                {hotspot.label} <span aria-hidden="true">→</span>
               </button>
             );
           })}
@@ -227,7 +293,7 @@ export function MarzipanoViewer({ scene, onSceneChange }: MarzipanoViewerProps) 
 
       <TourControls
         immersive={immersive}
-        fullscreen={fullscreen}
+        fullscreen={fullscreen || pseudoFullscreen}
         onRotateLeft={() => rotate(-0.18)}
         onRotateRight={() => rotate(0.18)}
         onZoomIn={() => zoom(-0.12)}
